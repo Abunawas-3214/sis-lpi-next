@@ -1,69 +1,159 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
+import Sidebar from "@/components/sidebar/Sidebar";
+import DetailDrawer from "@/components/detail/DetailDrawer";
+import StatsModal from "@/components/stats/StatsModal";
+import SuggestEditModal from "@/components/modals/SuggestEditModal";
+import { Loader2 } from "lucide-react";
+
+// Dynamically import Leaflet MapComponent with SSR disabled
+const MapComponent = dynamic(
+  () => import("@/components/map/MapComponent"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-screen bg-slate-900 flex flex-col items-center justify-center text-white gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+        <p className="text-sm font-medium tracking-wide text-zinc-300">
+          Memuat GIS Map Engine...
+        </p>
+      </div>
+    ),
+  }
+);
 
 export default function Home() {
+  const [items, setItems] = useState<any[]>([]);
+  const [provinces, setProvinces] = useState<string[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("");
+  const [selectedAccreditation, setSelectedAccreditation] = useState("");
+
+  const [visibleLayers, setVisibleLayers] = useState({
+    pesantren: true,
+    madrasah: true,
+    universitas_islam: true,
+    polygons: true,
+  });
+
+  // Modals
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false);
+  const [suggestTarget, setSuggestTarget] = useState<any | null>(null);
+
+  // Fetch Provinces
+  useEffect(() => {
+    fetch("/api/provinces")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setProvinces(data);
+      })
+      .catch((err) => console.error("Error loading provinces:", err));
+  }, []);
+
+  // Fetch Map Markers with Debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set("search", search.trim());
+      if (selectedProvince) params.set("province", selectedProvince);
+      if (selectedType) params.set("type", selectedType);
+      if (selectedStatus) params.set("status", selectedStatus);
+      if (selectedLevel) params.set("level", selectedLevel);
+      if (selectedAccreditation) params.set("accreditation", selectedAccreditation);
+
+      fetch(`/api/institutions/map?${params.toString()}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setItems(data);
+        })
+        .catch((err) => console.error("Error loading map items:", err));
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [
+    search,
+    selectedProvince,
+    selectedType,
+    selectedStatus,
+    selectedLevel,
+    selectedAccreditation,
+  ]);
+
+  const handleToggleLayer = (layer: keyof typeof visibleLayers) => {
+    setVisibleLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
+  };
+
+  const handleOpenSuggestForInst = (inst: any) => {
+    setSuggestTarget(inst);
+    setIsSuggestModalOpen(true);
+  };
+
+  const handleOpenSuggestNew = () => {
+    setSuggestTarget(null);
+    setIsSuggestModalOpen(true);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="relative w-screen h-screen overflow-hidden bg-slate-900">
+      {/* Interactive Map */}
+      <MapComponent
+        items={items}
+        selectedId={selectedId}
+        onSelectItem={(id) => setSelectedId(id)}
+        visibleLayers={visibleLayers}
+      />
+
+      {/* Floating Control Sidebar */}
+      <Sidebar
+        search={search}
+        onSearchChange={setSearch}
+        selectedProvince={selectedProvince}
+        onProvinceChange={setSelectedProvince}
+        provinces={provinces}
+        selectedType={selectedType}
+        onTypeChange={setSelectedType}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+        selectedLevel={selectedLevel}
+        onLevelChange={setSelectedLevel}
+        selectedAccreditation={selectedAccreditation}
+        onAccreditationChange={setSelectedAccreditation}
+        visibleLayers={visibleLayers}
+        onToggleLayer={handleToggleLayer}
+        onOpenSuggestModal={handleOpenSuggestNew}
+        onOpenStatsModal={() => setIsStatsModalOpen(true)}
+        totalFiltered={items.length}
+      />
+
+      {/* Slide-over Detail Drawer */}
+      <DetailDrawer
+        institutionId={selectedId}
+        onClose={() => setSelectedId(null)}
+        onOpenSuggestEdit={handleOpenSuggestForInst}
+      />
+
+      {/* Analytics Modal */}
+      <StatsModal
+        isOpen={isStatsModalOpen}
+        onClose={() => setIsStatsModalOpen(false)}
+      />
+
+      {/* Suggest Edit & Register Modal */}
+      <SuggestEditModal
+        isOpen={isSuggestModalOpen}
+        onClose={() => setIsSuggestModalOpen(false)}
+        targetInstitution={suggestTarget}
+        provinces={provinces}
+      />
+    </main>
   );
 }
