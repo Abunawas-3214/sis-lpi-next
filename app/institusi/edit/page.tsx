@@ -570,6 +570,34 @@ function InstitutionEditContent() {
               </div>
             </div>
 
+            {/* Link to Dedicated Polygon & Child Points Editor Page */}
+            <div className="p-4 bg-emerald-50/60 border border-emerald-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <span className="font-bold text-xs text-emerald-950 flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-emerald-600" />
+                  Buka Editor Khusus Multi-Polygon & Child Points
+                </span>
+                <p className="text-[11px] text-emerald-800">
+                  Kelola setiap bidang polygon (seperti Kampus 1, Kampus 2) dan masukkan titik-titik fasilitas gedung khusus untuk masing-masing polygon di atas peta interaktif.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    explicitId
+                      ? `/institusi/polygon-editor?id=${explicitId}`
+                      : "/institusi/polygon-editor"
+                  )
+                }
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 shrink-0"
+              >
+                <Layers className="w-4 h-4" />
+                <span>Buka Editor Polygon & Child Points</span>
+              </button>
+            </div>
+
             {/* Multi-Polygon Map Editor */}
             <PolygonMapEditor
               initialCoordinates={coordinates}

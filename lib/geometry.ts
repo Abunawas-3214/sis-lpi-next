@@ -5,6 +5,7 @@ export interface InstitutionPolygon {
   coordinates: [number, number][]; // GeoJSON format: [[lng, lat], ...]
   area_m2?: number;
   notes?: string;
+  child_points?: ChildPointItem[];
 }
 
 export interface CustomVariable {
@@ -94,7 +95,11 @@ export function toGeoJsonCoords(leafletLatLngs: [number, number][]): [number, nu
  * - Array of polygon objects: [{ id, name, coordinates, ... }, ...]
  * - GeoJSON Polygon / MultiPolygon
  */
-export function normalizePolygons(geom: any, defaultName = "Bidang Utama"): InstitutionPolygon[] {
+export function normalizePolygons(
+  geom: any,
+  defaultName = "Bidang Utama",
+  allChildPoints: ChildPointItem[] = []
+): InstitutionPolygon[] {
   if (!geom) return [];
 
   // If string, try parse JSON
@@ -106,61 +111,85 @@ export function normalizePolygons(geom: any, defaultName = "Bidang Utama"): Inst
     }
   }
 
+  let resultPolys: InstitutionPolygon[] = [];
+
   if (!Array.isArray(geom)) {
     // GeoJSON Feature or Polygon object
     if (geom?.type === "Polygon" && Array.isArray(geom.coordinates?.[0])) {
       const coords = geom.coordinates[0];
       const area = calculateAreaM2(toLeafletLatLngs(coords));
-      return [
+      resultPolys = [
         {
           id: "poly-1",
           name: defaultName,
           coordinates: coords,
           area_m2: area,
+          child_points: [],
         },
       ];
     }
-    return [];
+  } else if (geom.length > 0) {
+    // Case 1: Array of Polygon Objects [{ id, name, coordinates, child_points, ... }]
+    if (typeof geom[0] === "object" && !Array.isArray(geom[0]) && geom[0]?.coordinates) {
+      resultPolys = geom
+        .filter((p: any) => p && Array.isArray(p.coordinates) && p.coordinates.length >= 3)
+        .map((p: any, idx: number) => {
+          const coords = p.coordinates;
+          const area = p.area_m2 || calculateAreaM2(toLeafletLatLngs(coords));
+          const embeddedChildPoints = Array.isArray(p.child_points) ? p.child_points : [];
+          return {
+            id: String(p.id || `poly-${idx + 1}`),
+            name: p.name || `Bidang ${idx + 1}`,
+            category: p.category || "kampus",
+            coordinates: coords,
+            area_m2: area,
+            notes: p.notes || "",
+            child_points: embeddedChildPoints,
+          };
+        });
+    } else if (Array.isArray(geom[0]) && typeof geom[0][0] === "number") {
+      // Case 2: Array of points [[lng, lat], [lng, lat], ...] (Classic Single Polygon)
+      if (geom.length >= 3) {
+        const area = calculateAreaM2(toLeafletLatLngs(geom));
+        resultPolys = [
+          {
+            id: "poly-1",
+            name: defaultName,
+            category: "kampus_utama",
+            coordinates: geom,
+            area_m2: area,
+            child_points: [],
+          },
+        ];
+      }
+    }
   }
 
-  if (geom.length === 0) return [];
-
-  // Case 1: Array of Polygon Objects [{ id, name, coordinates, ... }]
-  if (typeof geom[0] === "object" && !Array.isArray(geom[0]) && geom[0]?.coordinates) {
-    return geom
-      .filter((p: any) => p && Array.isArray(p.coordinates) && p.coordinates.length >= 3)
-      .map((p: any, idx: number) => {
-        const coords = p.coordinates;
-        const area = p.area_m2 || calculateAreaM2(toLeafletLatLngs(coords));
-        return {
-          id: String(p.id || `poly-${idx + 1}`),
-          name: p.name || `Bidang ${idx + 1}`,
-          category: p.category || "kampus",
-          coordinates: coords,
-          area_m2: area,
-          notes: p.notes || "",
-        };
+  // Attach matching child points from allChildPoints if provided
+  if (allChildPoints && allChildPoints.length > 0 && resultPolys.length > 0) {
+    resultPolys = resultPolys.map((poly) => {
+      const matchingFromDb = allChildPoints.filter(
+        (cp) => cp.polygonId === poly.id || cp.polygonName === poly.name
+      );
+      // Merge or prioritize embedded child points vs DB child points
+      const mergedMap = new Map<string, ChildPointItem>();
+      (poly.child_points || []).forEach((cp) => {
+        const key = cp.id ? String(cp.id) : `${cp.name}-${cp.latitude}-${cp.longitude}`;
+        mergedMap.set(key, cp);
       });
+      matchingFromDb.forEach((cp) => {
+        const key = cp.id ? String(cp.id) : `${cp.name}-${cp.latitude}-${cp.longitude}`;
+        mergedMap.set(key, cp);
+      });
+
+      return {
+        ...poly,
+        child_points: Array.from(mergedMap.values()),
+      };
+    });
   }
 
-  // Case 2: Array of points [[lng, lat], [lng, lat], ...] (Classic Single Polygon)
-  if (Array.isArray(geom[0]) && typeof geom[0][0] === "number") {
-    if (geom.length >= 3) {
-      const area = calculateAreaM2(toLeafletLatLngs(geom));
-      return [
-        {
-          id: "poly-1",
-          name: defaultName,
-          category: "kampus_utama",
-          coordinates: geom,
-          area_m2: area,
-        },
-      ];
-    }
-    return [];
-  }
-
-  return [];
+  return resultPolys;
 }
 
 /**

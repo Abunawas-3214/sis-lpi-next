@@ -41,12 +41,25 @@ export async function GET(
       if (inst.landUseOther) useCategories.push("lainnya");
     }
 
-    const childPoints = await db
+    const childPointsRaw = await db
       .select()
       .from(institutionChildPoints)
       .where(eq(institutionChildPoints.institutionId, id));
 
-    const polygons = normalizePolygons(inst.landGeometry, inst.name);
+    const childPointsFormatted = childPointsRaw.map((cp) => ({
+      id: cp.id,
+      institutionId: cp.institutionId,
+      polygonId: cp.polygonId || undefined,
+      polygonName: cp.polygonName || undefined,
+      name: cp.name,
+      category: cp.category || "gedung",
+      latitude: cp.latitude,
+      longitude: cp.longitude,
+      customVariables: (cp.customVariables as any) || undefined,
+      notes: cp.notes || undefined,
+    }));
+
+    const polygons = normalizePolygons(inst.landGeometry, inst.name, childPointsFormatted);
 
     const data = {
       id: inst.id,
@@ -84,7 +97,7 @@ export async function GET(
         estimated_total_value: inst.landEstimatedTotalValue,
         valuation_year: inst.landValuationYear,
       },
-      child_points: childPoints.map((cp) => ({
+      child_points: childPointsFormatted.map((cp) => ({
         id: cp.id,
         polygon_id: cp.polygonId,
         polygon_name: cp.polygonName,
