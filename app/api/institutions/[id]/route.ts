@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { institutions } from "@/lib/db/schema";
+import { institutions, institutionChildPoints } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { normalizePolygons } from "@/lib/geometry";
 
 export async function GET(
   request: NextRequest,
@@ -40,6 +41,13 @@ export async function GET(
       if (inst.landUseOther) useCategories.push("lainnya");
     }
 
+    const childPoints = await db
+      .select()
+      .from(institutionChildPoints)
+      .where(eq(institutionChildPoints.institutionId, id));
+
+    const polygons = normalizePolygons(inst.landGeometry, inst.name);
+
     const data = {
       id: inst.id,
       osm_id: inst.osmId,
@@ -48,6 +56,7 @@ export async function GET(
       type: inst.type,
       level: inst.level || "unknown",
       status: inst.status || "unknown",
+      verification_status: inst.verificationStatus || "valid",
       address: inst.address,
       province: inst.province,
       city: inst.city,
@@ -59,6 +68,7 @@ export async function GET(
         ownership: inst.landOwnership || [],
         source: inst.landSource,
         geometry: inst.landGeometry,
+        polygons: polygons,
         parcels: inst.landParcels || [],
         use_categories: useCategories,
         certificate_status: inst.landCertificateStatus,
@@ -74,6 +84,17 @@ export async function GET(
         estimated_total_value: inst.landEstimatedTotalValue,
         valuation_year: inst.landValuationYear,
       },
+      child_points: childPoints.map((cp) => ({
+        id: cp.id,
+        polygon_id: cp.polygonId,
+        polygon_name: cp.polygonName,
+        name: cp.name,
+        category: cp.category,
+        latitude: cp.latitude,
+        longitude: cp.longitude,
+        custom_variables: cp.customVariables,
+        notes: cp.notes,
+      })),
       osm_tags: inst.osmTags || {},
       accreditation: inst.accreditation,
       emis_category: inst.emisCategory,

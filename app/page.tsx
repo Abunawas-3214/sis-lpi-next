@@ -41,7 +41,7 @@ export default function Home() {
     pesantren: true,
     madrasah: true,
     universitas_islam: true,
-    polygons: true,
+    polygons: false,
   });
 
   // Modals

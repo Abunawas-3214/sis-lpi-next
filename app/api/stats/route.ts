@@ -108,12 +108,27 @@ export async function GET(request: NextRequest) {
       by_precision[r.key || "unknown"] = r.val;
     });
 
+    // Verification Status
+    const verifRows = await db
+      .select({
+        key: institutions.verificationStatus,
+        val: count(),
+      })
+      .from(institutions)
+      .where(whereClause)
+      .groupBy(institutions.verificationStatus);
+    const by_verification_status: Record<string, number> = {};
+    verifRows.forEach((r) => {
+      by_verification_status[r.key || "valid"] = r.val;
+    });
+
     return NextResponse.json({
       total,
       by_type,
       by_status,
       by_province_top10,
       by_precision,
+      by_verification_status,
     });
   } catch (error: any) {
     console.error("Error fetching stats:", error);

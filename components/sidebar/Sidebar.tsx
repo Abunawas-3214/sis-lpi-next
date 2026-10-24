@@ -6,10 +6,9 @@ import {
   Filter,
   Layers,
   MapPin,
-  Building2,
+  LogIn,
   PlusCircle,
   BarChart3,
-  ShieldCheck,
   ChevronDown,
   ChevronUp,
   X,
@@ -126,11 +125,11 @@ export default function Sidebar({
               <BarChart3 className="w-4 h-4" />
             </button>
             <a
-              href="/admin"
-              title="Panel Admin"
-              className="p-2 text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              href="/login"
+              title="Masuk / Login"
+              className="p-2 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
             >
-              <ShieldCheck className="w-4 h-4" />
+              <LogIn className="w-4 h-4" />
             </a>
             <button
               onClick={() => setIsOpen(false)}
@@ -233,7 +232,7 @@ export default function Sidebar({
                     className="rounded border-zinc-300 text-teal-600 focus:ring-teal-500"
                   />
                   <span className="w-2.5 h-2.5 rounded-sm border-2 border-teal-600 bg-teal-100"></span>
-                  <span className="text-zinc-700 font-medium">Batas Lahan & Poligon</span>
+                  <span className="text-zinc-700 font-medium">Hanya Lembaga Berpeta</span>
                 </label>
               </div>
             )}

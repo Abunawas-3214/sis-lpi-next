@@ -110,3 +110,17 @@ body {
   border-radius: 1rem !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
 }
+
+/* MiniMap Fullscreen */
+.minimap-wrapper:fullscreen,
+.minimap-wrapper:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  border: none !important;
+  overflow: hidden;
+}
+.minimap-wrapper:fullscreen > div[style*="480px"],
+.minimap-wrapper:-webkit-full-screen > div[style*="480px"] {
+  height: 100vh !important;
+}

@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { suggestedEdits } from "@/lib/db/schema";
+import { suggestedEdits, institutions } from "@/lib/db/schema";
 import { applySuggestedEdit } from "@/lib/db/apply-edit";
 import { eq } from "drizzle-orm";
+import { getSessionUser } from "@/lib/auth";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const user = await getSessionUser(request);
   const token = request.cookies.get("admin_session")?.value;
-  if (token !== "authenticated") {
+  const isAuth = (user && (user.role === "super_admin" || user.role === "admin")) || token === "authenticated";
+  if (!isAuth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -45,6 +48,13 @@ export async function POST(
         reviewedAt: new Date(),
       })
       .where(eq(suggestedEdits.id, editId));
+
+    if (edit.institutionId) {
+      await db
+        .update(institutions)
+        .set({ verificationStatus: "valid", updatedAt: new Date() })
+        .where(eq(institutions.id, edit.institutionId));
+    }
 
     return NextResponse.json({ message: "Edit approved successfully." });
   } catch (error: any) {

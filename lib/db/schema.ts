@@ -38,6 +38,7 @@ export const institutions = pgTable("institutions", {
   osmTags: json("osm_tags"),
   source: varchar({ length: 20 }),
   notes: text(),
+  verificationStatus: varchar("verification_status", { length: 30 }).default("valid"),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),
 }, (table) => [
@@ -48,6 +49,24 @@ export const institutions = pgTable("institutions", {
   index("idx_institutions_province").using("btree", table.province.asc().nullsLast()),
   index("idx_institutions_status").using("btree", table.status.asc().nullsLast()),
   index("idx_institutions_type").using("btree", table.type.asc().nullsLast()),
+  index("idx_institutions_verification_status").using("btree", table.verificationStatus.asc().nullsLast()),
+]);
+
+export const users = pgTable("users", {
+  id: serial().primaryKey(),
+  username: varchar({ length: 100 }).notNull().unique(),
+  password: varchar({ length: 255 }).notNull(),
+  name: varchar({ length: 255 }).notNull(),
+  role: varchar({ length: 50 }).notNull(), // 'super_admin' | 'admin' | 'institusi'
+  institutionId: varchar("institution_id", { length: 10 }),
+  email: varchar({ length: 255 }),
+  isActive: varchar("is_active", { length: 10 }).default("true"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_users_username").using("btree", table.username.asc().nullsLast()),
+  index("idx_users_role").using("btree", table.role.asc().nullsLast()),
+  index("idx_users_institution_id").using("btree", table.institutionId.asc().nullsLast()),
 ]);
 
 export const suggestedEdits = pgTable("suggested_edits", {
@@ -70,7 +89,28 @@ export const suggestedEdits = pgTable("suggested_edits", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const institutionChildPoints = pgTable("institution_child_points", {
+  id: serial().primaryKey(),
+  institutionId: varchar("institution_id", { length: 10 }).notNull(),
+  polygonId: varchar("polygon_id", { length: 100 }),
+  polygonName: varchar("polygon_name", { length: 255 }),
+  name: varchar({ length: 255 }).notNull(),
+  category: varchar({ length: 100 }).default("gedung"),
+  latitude: doublePrecision().notNull(),
+  longitude: doublePrecision().notNull(),
+  customVariables: json("custom_variables"), // Dynamic key-value pairs or array
+  notes: text(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_child_points_inst_id").using("btree", table.institutionId.asc().nullsLast()),
+]);
+
 export type Institution = typeof institutions.$inferSelect;
 export type NewInstitution = typeof institutions.$inferInsert;
 export type SuggestedEdit = typeof suggestedEdits.$inferSelect;
 export type NewSuggestedEdit = typeof suggestedEdits.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type InstitutionChildPoint = typeof institutionChildPoints.$inferSelect;
+export type NewInstitutionChildPoint = typeof institutionChildPoints.$inferInsert;

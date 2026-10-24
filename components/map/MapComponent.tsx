@@ -300,6 +300,8 @@ export default function MapComponent({
       if (item.type === "madrasah" && !visibleLayers.madrasah) return false;
       if (item.type === "universitas_islam" && !visibleLayers.universitas_islam)
         return false;
+      // "Hanya Lembaga Berpeta" — filter to only show institutions that have a polygon
+      if (visibleLayers.polygons && !item.has_polygon) return false;
       return true;
     });
 
