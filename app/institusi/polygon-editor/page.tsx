@@ -52,6 +52,7 @@ function PolygonEditorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const explicitId = searchParams.get("id");
+  const targetPolyId = searchParams.get("polyId");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -133,7 +134,10 @@ function PolygonEditorContent() {
               );
               setPolygons(normalizedPolys);
               if (normalizedPolys.length > 0) {
-                setActivePolyId(normalizedPolys[0].id);
+                const foundTarget = targetPolyId
+                  ? normalizedPolys.find((p) => p.id === targetPolyId)
+                  : null;
+                setActivePolyId(foundTarget ? foundTarget.id : normalizedPolys[0].id);
               }
             } else {
               const normalizedPolys = normalizePolygons(
@@ -142,7 +146,10 @@ function PolygonEditorContent() {
               );
               setPolygons(normalizedPolys);
               if (normalizedPolys.length > 0) {
-                setActivePolyId(normalizedPolys[0].id);
+                const foundTarget = targetPolyId
+                  ? normalizedPolys.find((p) => p.id === targetPolyId)
+                  : null;
+                setActivePolyId(foundTarget ? foundTarget.id : normalizedPolys[0].id);
               }
             }
           })
