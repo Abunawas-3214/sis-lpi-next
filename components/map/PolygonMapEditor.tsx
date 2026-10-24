@@ -212,16 +212,32 @@ export default function PolygonMapEditor({
       markerLayerRef.current = marker;
       mapInstanceRef.current = map;
 
-      // Invalidate size on timers to ensure full render
-      setTimeout(() => map?.invalidateSize(), 50);
-      setTimeout(() => map?.invalidateSize(), 200);
-      setTimeout(() => map?.invalidateSize(), 600);
+      // Invalidate size safely on timers to ensure full render
+      const safeInvalidate = () => {
+        if (!map) return;
+        try {
+          const container = map.getContainer();
+          if (container && container.offsetParent !== null && (container as any)._leaflet_id) {
+            map.invalidateSize();
+          }
+        } catch {}
+      };
+
+      setTimeout(safeInvalidate, 50);
+      setTimeout(safeInvalidate, 200);
+      setTimeout(safeInvalidate, 600);
     } catch (e) {
       console.error("Leaflet map initialization error:", e);
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      mapInstanceRef.current?.invalidateSize();
+      if (!mapInstanceRef.current) return;
+      try {
+        const container = mapInstanceRef.current.getContainer();
+        if (container && container.offsetParent !== null && (container as any)._leaflet_id) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      } catch {}
     });
     resizeObserver.observe(container);
 
@@ -507,7 +523,20 @@ export default function PolygonMapEditor({
       map.setView(currentCoords, 16);
     }
 
-    setTimeout(() => map?.invalidateSize(), 100);
+    if (map) {
+      try {
+        const container = map.getContainer();
+        if (container && container.offsetParent !== null && (container as any)._leaflet_id) {
+          setTimeout(() => {
+            try {
+              if (map && map.getContainer() && (map.getContainer() as any)._leaflet_id) {
+                map.invalidateSize();
+              }
+            } catch {}
+          }, 100);
+        }
+      } catch {}
+    }
   }, [polygons, activePolyId, isEditingPolygon, childPoints, isPickingChildPoint]);
 
   const handleRecenter = () => {
