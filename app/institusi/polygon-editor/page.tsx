@@ -264,98 +264,90 @@ function PolygonEditorContent() {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-800 font-sans pb-24">
+    <div className="h-screen w-screen bg-zinc-50 text-zinc-800 font-sans flex flex-col overflow-hidden">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 px-6 py-3.5 flex items-center justify-between shadow-xs">
+      <header className="h-14 bg-white border-b border-zinc-200 px-4 sm:px-6 flex items-center justify-between shrink-0 shadow-xs z-30">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push(explicitId ? `/institusi/edit?id=${explicitId}` : "/institusi/edit")}
-            className="p-1.5 hover:bg-zinc-100 rounded-lg text-zinc-500 hover:text-zinc-900 transition-colors"
+            className="p-1.5 hover:bg-zinc-100 rounded-lg text-zinc-600 hover:text-zinc-900 transition-colors flex items-center gap-1 text-xs font-semibold"
             title="Kembali ke Edit Profil Institusi"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Kembali</span>
           </button>
+          <div className="h-4 w-px bg-zinc-200" />
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold text-zinc-900">
-                Editor Polygon & Child Points — {inst?.name || "Institusi"}
+              <h1 className="text-xs sm:text-sm font-bold text-zinc-900 line-clamp-1">
+                Editor Full-Screen Polygon — {inst?.name || "Institusi"}
               </h1>
               {inst?.id && (
-                <code className="text-[11px] bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded font-mono">
+                <code className="hidden sm:inline text-[10px] bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded font-mono">
                   ID: {inst.id}
                 </code>
               )}
             </div>
-            <p className="text-[11px] text-zinc-500">
-              Setiap polygon (misal: Kampus 1, Kampus 2) memiliki titik fasilitas (child points) tersendiri di dalamnya.
-            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs">
-          {user && (
-            <div className="hidden sm:flex flex-col text-right">
-              <span className="font-semibold text-zinc-900">{user.name}</span>
-              <span className="text-[10px] text-zinc-400 capitalize">
-                Role: {user.role.replace("_", " ")}
-              </span>
-            </div>
-          )}
+        <div className="flex items-center gap-2 text-xs">
+          <button
+            type="button"
+            onClick={handleSaveAllPolygons}
+            disabled={saving}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50 shrink-0"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Menyimpan...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-3.5 h-3.5" />
+                <span>Simpan Perubahan</span>
+              </>
+            )}
+          </button>
 
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 hover:bg-red-50 text-zinc-600 hover:text-red-600 rounded-xl border border-zinc-200 font-medium flex items-center gap-1.5 transition-colors"
+            className="p-2 hover:bg-red-50 text-zinc-500 hover:text-red-600 rounded-xl border border-zinc-200 font-medium transition-colors"
+            title="Keluar"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Keluar</span>
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-6xl mx-auto px-6 pt-6 space-y-6">
-        {/* Banner Status Verifikasi */}
-        {verificationStatus === "pengajuan" && (
-          <div className="p-4 bg-amber-50 border border-amber-300 rounded-2xl flex items-start gap-3 shadow-xs text-xs text-amber-900">
-            <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
-            <div className="space-y-1">
-              <div className="font-bold text-sm text-amber-950 flex items-center gap-2">
-                <span>Status Data: Pengajuan Perubahan (Menunggu Verifikasi Admin)</span>
+      {/* Full-Screen Workspace */}
+      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+        {/* Full-Screen Map Area */}
+        <div className="flex-1 h-full w-full relative overflow-hidden bg-zinc-100">
+          {successMsg && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-500 max-w-lg w-full px-4">
+              <div className="p-3 bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-lg flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{successMsg}</span>
+                </div>
+                <button onClick={() => setSuccessMsg("")} className="text-white/80 hover:text-white">✕</button>
               </div>
-              <p>
-                Perubahan polygon dan child points yang Anda kirimkan saat ini sedang dalam status peninjauan oleh Admin SIS-LPI.
-              </p>
             </div>
-          </div>
-        )}
+          )}
 
-        {successMsg && (
-          <div className="p-4 bg-emerald-100/80 border border-emerald-300 rounded-2xl text-emerald-900 text-xs font-semibold flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-700 shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
-
-        {errorMsg && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-
-        {/* Section 1: Peta Editor Interactive Multi-Polygon & Point Picking */}
-        <div className="bg-white p-6 rounded-3xl border border-zinc-200 shadow-xs space-y-4">
-          <div className="border-b border-zinc-100 pb-3 flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-zinc-900 flex items-center gap-2">
-                <Layers className="w-5 h-5 text-emerald-600" />
-                <span>Peta Spasial Multi-Polygon &amp; Penataan Child Points</span>
-              </h2>
-              <p className="text-xs text-zinc-500">
-                Pilih atau buat bidang polygon baru (misal: Kampus 1, Kampus 2), lalu tambahkan titik fasilitas gedung tepat di dalamnya.
-              </p>
+          {errorMsg && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-500 max-w-lg w-full px-4">
+              <div className="p-3 bg-red-600 text-white rounded-xl text-xs font-semibold shadow-lg flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMsg}</span>
+                </div>
+                <button onClick={() => setErrorMsg("")} className="text-white/80 hover:text-white">✕</button>
+              </div>
             </div>
-          </div>
+          )}
 
           <PolygonMapEditor
             initialCoordinates={coordinates}
@@ -368,47 +360,18 @@ function PolygonEditorContent() {
           />
         </div>
 
-        {/* Section 2: Kelola Child Points per Polygon Terpilih */}
-        <ChildPointsManager
-          institutionId={inst?.id}
-          childPoints={childPoints}
-          polygons={polygons}
-          onChange={setChildPoints}
-          onStatusChange={setVerificationStatus}
-          isPickingPoint={isPickingChildPoint}
-          onStartPickPoint={() => setIsPickingChildPoint(true)}
-          pickedCoords={pickedCoords}
-        />
-
-        {/* Sticky Save Action */}
-        <div className="sticky bottom-4 z-40 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-zinc-300/80 shadow-xl flex items-center justify-between gap-4">
-          <div className="text-xs text-zinc-600">
-            <span className="font-semibold text-zinc-900 block">
-              Simpan Struktur Polygon &amp; Child Points
-            </span>
-            <span>
-              Seluruh polygon dan titik fasilitas internal akan disimpan dan diajukan ke Admin.
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSaveAllPolygons}
-            disabled={saving}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all disabled:opacity-50 shrink-0"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Menyimpan Polygon...</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Simpan Seluruh Polygon &amp; Child Points</span>
-              </>
-            )}
-          </button>
+        {/* Sidebar Panel for Managing Child Points */}
+        <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-zinc-200 bg-white h-72 lg:h-full flex flex-col shrink-0 shadow-lg z-10 overflow-y-auto p-4">
+          <ChildPointsManager
+            institutionId={inst?.id}
+            childPoints={childPoints}
+            polygons={polygons}
+            onChange={setChildPoints}
+            onStatusChange={setVerificationStatus}
+            isPickingPoint={isPickingChildPoint}
+            onStartPickPoint={() => setIsPickingChildPoint(true)}
+            pickedCoords={pickedCoords}
+          />
         </div>
       </main>
     </div>

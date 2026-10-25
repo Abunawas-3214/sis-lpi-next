@@ -104,7 +104,6 @@ export default function PolygonMapEditor({
 
   // Explicit edit mode toggle for polygons
   const [isEditingPolygon, setIsEditingPolygon] = useState(false);
-  const [drawMode, setDrawMode] = useState<"polygon" | "point">("polygon");
 
   const [currentCoords, setCurrentCoords] = useState<[number, number]>(() => {
     return initialCoordinates || [-7.2575, 112.7521];
@@ -187,27 +186,18 @@ export default function PolygonMapEditor({
 
       currentTileLayerRef.current = initialTile;
 
-      // Draggable center point marker
+      // Center point marker (reference only, non-draggable in polygon-editor)
       const marker = L.marker(currentCoords, {
-        draggable: true,
+        draggable: false,
         icon: L.divIcon({
           className: "custom-div-icon",
-          html: `<div style="background-color: #2563eb; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
+          html: `<div style="background-color: #2563eb; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.4);"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8],
         }),
       }).addTo(map);
 
-      marker.bindTooltip("Titik Pusat Lembaga (Drag untuk memindahkan)", { sticky: true });
-
-      marker.on("dragend", () => {
-        const pos = marker.getLatLng();
-        const newCoords: [number, number] = [pos.lat, pos.lng];
-        setCurrentCoords(newCoords);
-        if (onCoordinatesChangeRef.current) {
-          onCoordinatesChangeRef.current(newCoords);
-        }
-      });
+      marker.bindTooltip("Titik Pusat Utama Lembaga", { sticky: true });
 
       markerLayerRef.current = marker;
       mapInstanceRef.current = map;
@@ -297,20 +287,7 @@ export default function PolygonMapEditor({
         return;
       }
 
-      // 2. Main Institution Coordinate Mode
-      if (drawMode === "point") {
-        const newCoords: [number, number] = [clickLat, clickLng];
-        setCurrentCoords(newCoords);
-        if (markerLayerRef.current) {
-          markerLayerRef.current.setLatLng(newCoords);
-        }
-        if (onCoordinatesChangeRef.current) {
-          onCoordinatesChangeRef.current(newCoords);
-        }
-        return;
-      }
-
-      // 3. Polygon Drawing Mode - only active when user explicitly enables editing
+      // 2. Polygon Drawing Mode - only active when user explicitly enables editing
       if (!isEditingPolygon) return;
 
       // Add point to active polygon
@@ -357,7 +334,7 @@ export default function PolygonMapEditor({
     return () => {
       map.off("click", handleClick);
     };
-  }, [isEditingPolygon, drawMode, activePolyId, isPickingChildPoint, polygons]);
+  }, [isEditingPolygon, activePolyId, isPickingChildPoint, polygons]);
 
   // Render Polygons, Vertices, and Child Points
   useEffect(() => {
@@ -574,7 +551,6 @@ export default function PolygonMapEditor({
     setPolygons(nextList);
     setActivePolyId(newId);
     setIsEditingPolygon(true);
-    setDrawMode("polygon");
 
     const totalArea = nextList.reduce((acc, p) => acc + (p.area_m2 || 0), 0);
     if (onPolygonsChangeRef.current) {
@@ -617,7 +593,6 @@ export default function PolygonMapEditor({
             type="button"
             onClick={() => {
               setIsEditingPolygon((prev) => !prev);
-              setDrawMode("polygon");
             }}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs ${
               isEditingPolygon
@@ -638,37 +613,10 @@ export default function PolygonMapEditor({
             )}
           </button>
 
-          {/* Mode switch */}
-          <div className="flex bg-white rounded-xl p-1 border border-zinc-200 text-xs shadow-xs">
-            <button
-              type="button"
-              onClick={() => {
-                setDrawMode("polygon");
-              }}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
-                drawMode === "polygon"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "text-zinc-600 hover:text-zinc-900"
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Bidang Polygon ({polygons.length})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setDrawMode("point");
-                setIsEditingPolygon(false);
-              }}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition-all flex items-center gap-1.5 ${
-                drawMode === "point"
-                  ? "bg-blue-600 text-white shadow-xs"
-                  : "text-zinc-600 hover:text-zinc-900"
-              }`}
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              <span>Titik Pusat</span>
-            </button>
+          {/* Active Polygon Count Badge */}
+          <div className="px-3 py-1.5 bg-white border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-700 flex items-center gap-1.5 shadow-xs">
+            <Layers className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{polygons.length} Bidang Polygon</span>
           </div>
 
           <button
@@ -819,8 +767,6 @@ export default function PolygonMapEditor({
               ? "Klik pada peta (di dalam polygon) untuk mengisi koordinat titik fasilitas."
               : isEditingPolygon
               ? "Mode Edit Aktif: Klik pada peta untuk menambah titik sudut polygon. Klik pada titik putih untuk menghapusnya."
-              : drawMode === "point"
-              ? "Geser (drag) titik biru untuk memposisikan koordinat utama lembaga."
               : "Klik tombol 'Mulai Edit / Gambar Polygon' di atas jika Anda ingin mengubah sudut bidang tanah."}
           </p>
         </div>

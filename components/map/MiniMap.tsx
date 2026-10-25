@@ -285,10 +285,20 @@ export default function MiniMap({
       mapInstanceRef.current = map;
       setMapReady(true);
 
-      // Multi-timer invalidate size for seamless rendering
-      setTimeout(() => map?.invalidateSize(), 50);
-      setTimeout(() => map?.invalidateSize(), 200);
-      setTimeout(() => map?.invalidateSize(), 600);
+      // Safe multi-timer invalidate size for seamless rendering
+      const safeInvalidate = () => {
+        if (!map) return;
+        try {
+          const container = map.getContainer();
+          if (container && container.offsetParent !== null && (container as any)._leaflet_id) {
+            map.invalidateSize();
+          }
+        } catch {}
+      };
+
+      setTimeout(safeInvalidate, 50);
+      setTimeout(safeInvalidate, 200);
+      setTimeout(safeInvalidate, 600);
     } catch (e) {
       console.error("Leaflet map initialization error:", e);
     }
