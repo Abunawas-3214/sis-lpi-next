@@ -19,24 +19,19 @@ import {
   ShieldCheck,
   Check,
   Info,
+  Plus,
+  Edit3,
 } from "lucide-react";
-import ParcelsManager, { ParcelItem } from "@/components/map/ParcelsManager";
-import ChildPointsManager from "@/components/map/ChildPointsManager";
 import { normalizePolygons, InstitutionPolygon, ChildPointItem } from "@/lib/geometry";
 
-// Dynamically load PolygonMapEditor to avoid Leaflet SSR issues
-const PolygonMapEditor = dynamic(
-  () => import("@/components/map/PolygonMapEditor"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-[450px] rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-400 text-xs">
-        <Loader2 className="w-6 h-6 animate-spin text-emerald-600 mr-2" />
-        <span>Memuat editor peta polygon...</span>
-      </div>
-    ),
-  }
-);
+const MiniMap = dynamic(() => import("@/components/map/MiniMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-64 bg-zinc-100 rounded-2xl flex items-center justify-center text-zinc-400 text-xs animate-pulse">
+      Memuat peta polygon...
+    </div>
+  ),
+});
 
 const USE_CATEGORY_OPTIONS = [
   { id: "pendidikan", label: "Pendidikan (Gedung Sekolah/Kelas)" },
@@ -89,7 +84,7 @@ function InstitutionEditContent() {
   const [polygons, setPolygons] = useState<InstitutionPolygon[]>([]);
   const [childPoints, setChildPoints] = useState<ChildPointItem[]>([]);
   const [polygonGeometry, setPolygonGeometry] = useState<any>(null);
-  const [parcels, setParcels] = useState<ParcelItem[]>([]);
+  const [parcels, setParcels] = useState<any[]>([]);
   const [verificationStatus, setVerificationStatus] = useState("valid");
 
   // Interactive Child Point Picking on Map
@@ -556,44 +551,219 @@ function InstitutionEditContent() {
             </div>
           </div>
 
-          {/* Section 2: Peta Interaktif & Tambah / Edit Polygon */}
+          {/* Section 2: Titik Pusat Lembaga (Center Point) */}
           <div className="bg-white p-6 rounded-3xl border border-zinc-200 shadow-xs space-y-4">
             <div className="border-b border-zinc-100 pb-3 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-zinc-900 flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-emerald-600" />
-                  <span>Peta Spasial & Tambah / Edit Polygon Tanah</span>
+                  <MapPin className="w-5 h-5 text-blue-600" />
+                  <span>Titik Pusat Koordinat Utama Lembaga</span>
                 </h2>
                 <p className="text-xs text-zinc-500">
-                  Tambahkan atau sesuaikan polygon batas lahan institusi dan sub-zonasi
+                  Tentukan posisi titik pusat utama lembaga (latitude & longitude)
                 </p>
               </div>
             </div>
 
-            {/* Multi-Polygon Map Editor */}
-            <PolygonMapEditor
-              initialCoordinates={coordinates}
-              polygons={polygons}
-              childPoints={childPoints}
-              onCoordinatesChange={handleCoordinatesChange}
-              onPolygonsChange={handlePolygonsChange}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block font-semibold text-zinc-700 mb-1.5">
+                  Latitude (Garis Lintang)
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={coordinates ? coordinates[0] : ""}
+                  onChange={(e) => {
+                    const lat = parseFloat(e.target.value);
+                    const lng = coordinates ? coordinates[1] : 112.7521;
+                    if (!isNaN(lat)) setCoordinates([lat, lng]);
+                  }}
+                  placeholder="Contoh: -7.951560"
+                  className="w-full px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-xs"
+                />
+              </div>
 
-            {/* Child Facility Points Manager (Titik Fasilitas dalam Polygon) */}
-            <div className="pt-4 border-t border-zinc-100">
-              <ChildPointsManager
-                institutionId={inst?.id}
-                childPoints={childPoints}
-                polygons={polygons}
-                onChange={setChildPoints}
-                onStatusChange={setVerificationStatus}
-              />
+              <div>
+                <label className="block font-semibold text-zinc-700 mb-1.5">
+                  Longitude (Garis Bujur)
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={coordinates ? coordinates[1] : ""}
+                  onChange={(e) => {
+                    const lng = parseFloat(e.target.value);
+                    const lat = coordinates ? coordinates[0] : -7.2575;
+                    if (!isNaN(lng)) setCoordinates([lat, lng]);
+                  }}
+                  placeholder="Contoh: 112.607420"
+                  className="w-full px-3.5 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono text-xs"
+                />
+              </div>
             </div>
 
-            {/* Sub-Parcels / Zonasi Manager */}
-            <div className="pt-4 border-t border-zinc-100">
-              <ParcelsManager parcels={parcels} onChange={setParcels} />
+            {coordinates && (
+              <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>
+                    Koordinat Terpasang: <code className="font-mono font-bold">{coordinates[0]}, {coordinates[1]}</code>
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Section 3: DAFTAR POLYGON (Lahan & Peta per Polygon) */}
+          <div className="bg-white p-6 rounded-3xl border border-zinc-200 shadow-xs space-y-6">
+            <div className="border-b border-zinc-100 pb-3 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-zinc-900 flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-emerald-600" />
+                  <span>DAFTAR POLYGON</span>
+                </h2>
+                <p className="text-xs text-zinc-500">
+                  Daftar lokasi bidang tanah (polygon) beserta peta dan titik fasilitas gedung
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(
+                    explicitId
+                      ? `/institusi/polygon-editor?id=${explicitId}`
+                      : "/institusi/polygon-editor"
+                  )
+                }
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Polygon Baru</span>
+              </button>
             </div>
+
+            {/* List of Polygons Bertumpuk ke Bawah */}
+            {polygons.length === 0 ? (
+              <div className="p-8 text-center bg-zinc-50 border border-dashed border-zinc-200 rounded-2xl space-y-3">
+                <Layers className="w-10 h-10 text-zinc-300 mx-auto" />
+                <p className="text-xs font-semibold text-zinc-600">Belum ada polygon bidang tanah yang terdaftar.</p>
+                <p className="text-[11px] text-zinc-400 max-w-md mx-auto">
+                  Silakan tambah polygon baru untuk menentukan batas lahan dan titik fasilitas lembaga Anda.
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      explicitId
+                        ? `/institusi/polygon-editor?id=${explicitId}`
+                        : "/institusi/polygon-editor"
+                    )
+                  }
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Polygon Baru</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {polygons.map((poly, idx) => {
+                  const associatedChildPoints = childPoints.filter(
+                    (cp) => cp.polygonId === poly.id || cp.polygonName === poly.name
+                  );
+
+                  // Polygon center coordinate calculated from bounds or main coordinates fallback
+                  let polyCoords: [number, number] = coordinates || [-7.95156, 112.60742];
+                  if (poly.coordinates && poly.coordinates.length > 0) {
+                    const lats = poly.coordinates.map((c) => c[1]);
+                    const lngs = poly.coordinates.map((c) => c[0]);
+                    const avgLat = lats.reduce((a, b) => a + b, 0) / lats.length;
+                    const avgLng = lngs.reduce((a, b) => a + b, 0) / lngs.length;
+                    if (!isNaN(avgLat) && !isNaN(avgLng)) {
+                      polyCoords = [avgLat, avgLng];
+                    }
+                  }
+
+                  return (
+                    <div
+                      key={poly.id || idx}
+                      className="bg-zinc-50/50 border border-zinc-200 rounded-3xl p-6 space-y-4 shadow-2xs hover:border-emerald-300 transition-all"
+                    >
+                      {/* Polygon Card Header */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-4">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[11px] font-extrabold rounded-md font-mono">
+                              #{idx + 1}
+                            </span>
+                            <h3 className="text-base font-bold text-zinc-900">{poly.name}</h3>
+                          </div>
+                          <p className="text-xs text-zinc-500 font-mono mt-1">
+                            Luas Area: {poly.area_m2 ? `${poly.area_m2.toLocaleString("id-ID")} m²` : "0 m²"} (
+                            {((poly.area_m2 || 0) / 10000).toFixed(2)} Ha)
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-bold">
+                            {associatedChildPoints.length} Titik Fasilitas
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Map Preview for this Specific Polygon */}
+                      <div className="rounded-2xl overflow-hidden border border-zinc-200 shadow-inner">
+                        <MiniMap
+                          coordinates={polyCoords}
+                          name={poly.name}
+                          type={type}
+                          polygons={[poly]}
+                          childPoints={associatedChildPoints}
+                        />
+                      </div>
+
+                      {/* Action Button: Edit Polygon */}
+                      <div className="pt-3 border-t border-zinc-200/80 flex items-center justify-end">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            router.push(
+                              explicitId
+                                ? `/institusi/polygon-editor?id=${explicitId}&polyId=${poly.id}`
+                                : `/institusi/polygon-editor?polyId=${poly.id}`
+                            )
+                          }
+                          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                          <span>Edit Polygon</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* "+ Tambah polygon baru" button at bottom */}
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      router.push(
+                        explicitId
+                          ? `/institusi/polygon-editor?id=${explicitId}`
+                          : "/institusi/polygon-editor"
+                      )
+                    }
+                    className="w-full py-3.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-2 border-dashed border-zinc-300 hover:border-emerald-500 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4 text-emerald-600" />
+                    <span>+ Tambah Polygon Baru</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section 3: Keterangan Pertanahan & Legalitas */}
