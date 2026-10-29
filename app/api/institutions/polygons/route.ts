@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { institutions } from "@/lib/db/schema";
 import { isNotNull, or } from "drizzle-orm";
+import { normalizePolygons } from "@/lib/geometry";
 
 export async function GET() {
   try {
@@ -25,22 +26,35 @@ export async function GET() {
     const parcelFeatures: any[] = [];
 
     for (const r of rows) {
-      // 1. Outer Land Boundary Polygon
-      const geom = r.landGeometry as any;
-      if (geom && Array.isArray(geom) && geom.length > 2) {
-        boundaryFeatures.push({
-          type: "Feature",
-          properties: {
-            id: r.id,
-            name: r.name,
-            institution_type: r.type,
-            layer_type: "boundary",
-          },
-          geometry: {
-            type: "Polygon",
-            coordinates: [geom],
-          },
-        });
+      // 1. Outer Land Boundary Polygon (normalized to support both new multi-polygon array and legacy coordinates)
+      const normalized = normalizePolygons(r.landGeometry, r.name);
+      for (const poly of normalized) {
+        if (poly.coordinates && poly.coordinates.length >= 3) {
+          // Ensure closed linear ring for RFC 7946 GeoJSON compliance
+          let ring = [...poly.coordinates];
+          const first = ring[0];
+          const last = ring[ring.length - 1];
+          if (first && last && (first[0] !== last[0] || first[1] !== last[1])) {
+            ring.push([first[0], first[1]]);
+          }
+
+          boundaryFeatures.push({
+            type: "Feature",
+            properties: {
+              id: r.id,
+              name: poly.name || r.name,
+              institution_name: r.name,
+              institution_type: r.type,
+              polygon_id: poly.id,
+              area_m2: poly.area_m2,
+              layer_type: "boundary",
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [ring],
+            },
+          });
+        }
       }
 
       // 2. Sub-Parcels

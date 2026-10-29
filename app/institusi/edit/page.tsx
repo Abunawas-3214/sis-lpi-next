@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -291,7 +291,7 @@ function InstitutionEditContent() {
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-800 font-sans pb-24">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 px-6 py-3.5 flex items-center justify-between shadow-xs">
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-zinc-200 px-6 py-3.5 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push(inst ? `/institutions/${inst.id}` : "/")}
@@ -630,13 +630,7 @@ function InstitutionEditContent() {
 
               <button
                 type="button"
-                onClick={() =>
-                  router.push(
-                    explicitId
-                      ? `/institusi/polygon-editor?id=${explicitId}`
-                      : "/institusi/polygon-editor"
-                  )
-                }
+                onClick={() => router.push('/polygon-editor/tambah')}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" />
@@ -654,13 +648,7 @@ function InstitutionEditContent() {
                 </p>
                 <button
                   type="button"
-                  onClick={() =>
-                    router.push(
-                      explicitId
-                        ? `/institusi/polygon-editor?id=${explicitId}`
-                        : "/institusi/polygon-editor"
-                    )
-                  }
+                  onClick={() => router.push('/polygon-editor/tambah')}
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold inline-flex items-center gap-1.5"
                 >
                   <Plus className="w-4 h-4" />
@@ -728,13 +716,7 @@ function InstitutionEditContent() {
                       <div className="pt-3 border-t border-zinc-200/80 flex items-center justify-end">
                         <button
                           type="button"
-                          onClick={() =>
-                            router.push(
-                              explicitId
-                                ? `/institusi/polygon-editor?id=${explicitId}&polyId=${poly.id}`
-                                : `/institusi/polygon-editor?polyId=${poly.id}`
-                            )
-                          }
+                          onClick={() => router.push(`/polygon-editor/edit/${poly.id}`)}
                           className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2"
                         >
                           <Edit3 className="w-4 h-4" />
@@ -749,13 +731,7 @@ function InstitutionEditContent() {
                 <div className="pt-2 text-center">
                   <button
                     type="button"
-                    onClick={() =>
-                      router.push(
-                        explicitId
-                          ? `/institusi/polygon-editor?id=${explicitId}`
-                          : "/institusi/polygon-editor"
-                      )
-                    }
+                    onClick={() => router.push('/polygon-editor/tambah')}
                     className="w-full py-3.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-2 border-dashed border-zinc-300 hover:border-emerald-500 rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-2"
                   >
                     <Plus className="w-4 h-4 text-emerald-600" />

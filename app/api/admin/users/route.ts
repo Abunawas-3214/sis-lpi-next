@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         role: "admin",
         email: email ? email.trim() : null,
-        isActive: "true",
+        isActive: true,
       })
       .returning({
         id: users.id,

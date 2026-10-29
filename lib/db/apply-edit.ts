@@ -179,7 +179,7 @@ export async function applySuggestedEdit(edit: SuggestedEdit) {
       }
     }
 
-    if (edit.suggestedGeometry && field === "land_geometry") {
+    if (edit.suggestedGeometry && (field === "land_geometry" || field === "pengajuan_data_dan_polygon")) {
       updateData.landGeometry = edit.suggestedGeometry;
     }
   }

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { connection } from "next/server";
 import { db } from "@/lib/db";
 import { institutions } from "@/lib/db/schema";
 import { and, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
 import { SEARCH_ALIASES } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const { searchParams } = new URL(request.url);
     const province = searchParams.get("province");
@@ -80,9 +82,22 @@ export async function GET(request: NextRequest) {
     const result = rows.map((r) => {
       const geom = r.landGeometry as any;
       const parcels = r.landParcels as any;
-      const has_polygon = Boolean(
-        geom && Array.isArray(geom) && geom.length > 3
-      );
+
+      let has_polygon = false;
+      if (geom) {
+        if (Array.isArray(geom) && geom.length > 0) {
+          if (typeof geom[0] === "object" && !Array.isArray(geom[0]) && geom[0]?.coordinates) {
+            has_polygon = geom.some(
+              (p: any) => Array.isArray(p?.coordinates) && p.coordinates.length >= 3
+            );
+          } else if (Array.isArray(geom[0])) {
+            has_polygon = geom.length >= 3;
+          }
+        } else if (typeof geom === "object" && geom?.type === "Polygon") {
+          has_polygon = Boolean(geom.coordinates?.[0]?.length >= 3);
+        }
+      }
+
       const has_parcels = Boolean(
         parcels && Array.isArray(parcels) && parcels.length > 0
       );

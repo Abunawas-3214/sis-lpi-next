@@ -78,7 +78,18 @@ export async function GET(request: NextRequest) {
         landCertificateStatus: institutions.landCertificateStatus,
         verificationStatus: institutions.verificationStatus,
         updatedAt: institutions.updatedAt,
-        hasPolygon: sql<boolean>`CASE WHEN ${institutions.landGeometry} IS NOT NULL AND json_array_length(CASE WHEN json_typeof(${institutions.landGeometry}) = 'array' THEN ${institutions.landGeometry} ELSE '[]'::json END) > 2 THEN true ELSE false END`,
+        hasPolygon: sql<boolean>`CASE
+          WHEN ${institutions.landGeometry} IS NULL THEN false
+          WHEN json_typeof(${institutions.landGeometry}) = 'array' AND json_array_length(${institutions.landGeometry}) = 0 THEN false
+          WHEN json_typeof(${institutions.landGeometry}) = 'array' AND json_array_length(${institutions.landGeometry}) > 0 THEN
+            CASE
+              WHEN json_typeof(${institutions.landGeometry}->0) = 'object' THEN true
+              WHEN json_typeof(${institutions.landGeometry}->0) = 'array' AND json_array_length(${institutions.landGeometry}) >= 3 THEN true
+              ELSE false
+            END
+          WHEN json_typeof(${institutions.landGeometry}) = 'object' THEN true
+          ELSE false
+        END`,
         hasParcels: sql<boolean>`CASE WHEN ${institutions.landParcels} IS NOT NULL AND json_array_length(CASE WHEN json_typeof(${institutions.landParcels}) = 'array' THEN ${institutions.landParcels} ELSE '[]'::json END) > 0 THEN true ELSE false END`,
       })
       .from(institutions)
@@ -196,7 +207,7 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       role: "institusi",
       institutionId: newId,
-      isActive: "true",
+      isActive: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     });

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (user.isActive === "false") {
+    if (user.isActive === false || String(user.isActive) === "false") {
       return NextResponse.json(
         { error: "Akun ini telah dinonaktifkan" },
         { status: 403 }

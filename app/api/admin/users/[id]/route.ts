@@ -86,7 +86,7 @@ export async function PATCH(
 
     if (body.name) updateData.name = body.name.trim();
     if (body.email !== undefined) updateData.email = body.email ? body.email.trim() : null;
-    if (body.isActive !== undefined) updateData.isActive = String(body.isActive);
+    if (body.isActive !== undefined) updateData.isActive = Boolean(body.isActive);
     if (body.password) {
       updateData.password = hashPassword(body.password);
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
+import L from "@/lib/leaflet-safe";
 import {
   Layers,
   MapPin,
@@ -74,6 +74,7 @@ export default function PolygonMapEditor({
   const polygonLayersRef = useRef<L.Polygon[]>([]);
   const vertexMarkersRef = useRef<L.CircleMarker[]>([]);
   const childMarkersRef = useRef<L.Marker[]>([]);
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
 
   const [activeBasemap, setActiveBasemap] =
     useState<keyof typeof BASEMAP_TILES>("streets");
@@ -213,9 +214,10 @@ export default function PolygonMapEditor({
         } catch {}
       };
 
-      setTimeout(safeInvalidate, 50);
-      setTimeout(safeInvalidate, 200);
-      setTimeout(safeInvalidate, 600);
+      const t1 = setTimeout(safeInvalidate, 50);
+      const t2 = setTimeout(safeInvalidate, 200);
+      const t3 = setTimeout(safeInvalidate, 600);
+      timersRef.current.push(t1, t2, t3);
     } catch (e) {
       console.error("Leaflet map initialization error:", e);
     }
@@ -225,16 +227,19 @@ export default function PolygonMapEditor({
       try {
         const container = mapInstanceRef.current.getContainer();
         if (container && container.offsetParent !== null && (container as any)._leaflet_id) {
-          mapInstanceRef.current.invalidateSize();
+          mapInstanceRef.current.invalidateSize({ animate: false });
         }
       } catch {}
     });
     resizeObserver.observe(container);
 
     return () => {
+      timersRef.current.forEach((t) => clearTimeout(t));
+      timersRef.current = [];
       resizeObserver.disconnect();
       if (mapInstanceRef.current) {
         try {
+          mapInstanceRef.current.stop();
           mapInstanceRef.current.remove();
         } catch {}
         mapInstanceRef.current = null;
@@ -495,22 +500,23 @@ export default function PolygonMapEditor({
 
     // Initial fit bounds if spatial elements exist
     if (hasBounds) {
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18, animate: false });
     } else if (currentCoords) {
-      map.setView(currentCoords, 16);
+      map.setView(currentCoords, 16, { animate: false });
     }
 
     if (map) {
       try {
         const container = map.getContainer();
         if (container && container.offsetParent !== null && (container as any)._leaflet_id) {
-          setTimeout(() => {
+          const t = setTimeout(() => {
             try {
               if (map && map.getContainer() && (map.getContainer() as any)._leaflet_id) {
-                map.invalidateSize();
+                map.invalidateSize({ animate: false });
               }
             } catch {}
           }, 100);
+          timersRef.current.push(t);
         }
       } catch {}
     }

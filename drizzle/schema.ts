@@ -1,7 +1,36 @@
-import { pgTable, serial, integer, varchar, json, text, geometry, doublePrecision, timestamp, index, primaryKey, check, pgView, customType } from "drizzle-orm/pg-core"
+import { pgTable, varchar, serial, integer, json, doublePrecision, timestamp, text, boolean, geometry, index, foreignKey, primaryKey, unique, check, pgView, customType } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
+
+export const institutionChildPoints = pgTable("institution_child_points", {
+	id: serial().primaryKey(),
+	institutionId: varchar("institution_id", { length: 10 }).notNull().references(() => institutions.id, { onDelete: "cascade" } ),
+	polygonId: varchar("polygon_id", { length: 100 }).references(() => institutionPolygons.id, { onDelete: "set null" } ),
+	name: varchar({ length: 255 }).notNull(),
+	category: varchar({ length: 100 }).default("gedung"),
+	latitude: doublePrecision().notNull(),
+	longitude: doublePrecision().notNull(),
+	customVariables: json("custom_variables"),
+	notes: text(),
+	createdAt: timestamp("created_at").default(sql`now()`),
+	updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => [
+	index("idx_child_points_inst_id").using("btree", table.institutionId.asc().nullsLast()),
+	index("idx_child_points_polygon_id").using("btree", table.polygonId.asc().nullsLast()),
+]);
+
+export const institutionPolygons = pgTable("institution_polygons", {
+	id: varchar().primaryKey(),
+	institutionId: varchar("institution_id").notNull().references(() => institutions.id, { onDelete: "cascade" } ),
+	name: varchar().notNull(),
+	coordinates: json().notNull(),
+	areaM2: doublePrecision("area_m2"),
+	createdAt: timestamp("created_at").default(sql`now()`),
+	updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => [
+	index("idx_institution_polygons_inst_id").using("btree", table.institutionId.asc().nullsLast()),
+]);
 
 export const institutions = pgTable("institutions", {
 	id: varchar({ length: 10 }).primaryKey(),
@@ -43,6 +72,7 @@ export const institutions = pgTable("institutions", {
 	notes: text(),
 	createdAt: timestamp("created_at"),
 	updatedAt: timestamp("updated_at"),
+	verificationStatus: varchar("verification_status", { length: 30 }).default("valid"),
 }, (table) => [
 	index("idx_institutions_geom").using("gist", table.geom.asc().nullsLast()),
 	index("idx_institutions_level").using("btree", table.level.asc().nullsLast()),
@@ -51,6 +81,7 @@ export const institutions = pgTable("institutions", {
 	index("idx_institutions_province").using("btree", table.province.asc().nullsLast()),
 	index("idx_institutions_status").using("btree", table.status.asc().nullsLast()),
 	index("idx_institutions_type").using("btree", table.type.asc().nullsLast()),
+	index("idx_institutions_verification_status").using("btree", table.verificationStatus.asc().nullsLast()),
 ]);
 
 export const spatialRefSys = pgTable("spatial_ref_sys", {
@@ -81,6 +112,23 @@ export const suggestedEdits = pgTable("suggested_edits", {
 	reviewedAt: timestamp("reviewed_at"),
 	createdAt: timestamp("created_at"),
 });
+
+export const users = pgTable("users", {
+	id: serial().primaryKey(),
+	username: varchar({ length: 100 }).notNull(),
+	password: varchar({ length: 255 }).notNull(),
+	name: varchar({ length: 255 }).notNull(),
+	role: varchar({ length: 50 }).notNull(),
+	institutionId: varchar("institution_id", { length: 10 }),
+	email: varchar({ length: 255 }),
+	isActive: boolean("is_active").default(true),
+	createdAt: timestamp("created_at").default(sql`now()`),
+	updatedAt: timestamp("updated_at").default(sql`now()`),
+}, (table) => [
+	index("idx_users_institution_id").using("btree", table.institutionId.asc().nullsLast()),
+	index("idx_users_role").using("btree", table.role.asc().nullsLast()),
+	index("idx_users_username").using("btree", table.username.asc().nullsLast()),
+	unique("users_username_key").on(table.username),]);
 export const geographyColumns = pgView("geography_columns", {	fTableCatalog: customType({ dataType: () => 'name' })("f_table_catalog"),
 	fTableSchema: customType({ dataType: () => 'name' })("f_table_schema"),
 	fTableName: customType({ dataType: () => 'name' })("f_table_name"),

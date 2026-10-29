@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
+import L from "@/lib/leaflet-safe";
 import "leaflet.markercluster";
 import { Navigation, Layers, Info, X } from "lucide-react";
 

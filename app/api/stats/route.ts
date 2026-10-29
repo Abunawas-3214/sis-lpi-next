@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { connection } from "next/server";
 import { db } from "@/lib/db";
 import { institutions } from "@/lib/db/schema";
 import { and, count, desc, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
 import { SEARCH_ALIASES } from "@/lib/utils";
 
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const { searchParams } = new URL(request.url);
     const province = searchParams.get("province");

@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, json, text, geometry, doublePrecision, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, json, text, geometry, doublePrecision, timestamp, index, boolean } from "drizzle-orm/pg-core";
 
 export const institutions = pgTable("institutions", {
   id: varchar({ length: 10 }).primaryKey(),
@@ -60,7 +60,7 @@ export const users = pgTable("users", {
   role: varchar({ length: 50 }).notNull(), // 'super_admin' | 'admin' | 'institusi'
   institutionId: varchar("institution_id", { length: 10 }),
   email: varchar({ length: 255 }),
-  isActive: varchar("is_active", { length: 10 }).default("true"),
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -89,6 +89,18 @@ export const suggestedEdits = pgTable("suggested_edits", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const institutionPolygons = pgTable("institution_polygons", {
+  id: varchar().primaryKey(),
+  institutionId: varchar("institution_id").notNull(),
+  name: varchar().notNull(),
+  coordinates: json().notNull(),
+  areaM2: doublePrecision("area_m2"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_institution_polygons_inst_id").using("btree", table.institutionId.asc().nullsLast()),
+]);
+
 export const institutionChildPoints = pgTable("institution_child_points", {
   id: serial().primaryKey(),
   institutionId: varchar("institution_id", { length: 10 }).notNull(),
@@ -104,6 +116,7 @@ export const institutionChildPoints = pgTable("institution_child_points", {
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_child_points_inst_id").using("btree", table.institutionId.asc().nullsLast()),
+  index("idx_child_points_polygon_id").using("btree", table.polygonId.asc().nullsLast()),
 ]);
 
 export type Institution = typeof institutions.$inferSelect;
@@ -112,5 +125,7 @@ export type SuggestedEdit = typeof suggestedEdits.$inferSelect;
 export type NewSuggestedEdit = typeof suggestedEdits.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type InstitutionPolygon = typeof institutionPolygons.$inferSelect;
+export type NewInstitutionPolygon = typeof institutionPolygons.$inferInsert;
 export type InstitutionChildPoint = typeof institutionChildPoints.$inferSelect;
 export type NewInstitutionChildPoint = typeof institutionChildPoints.$inferInsert;
