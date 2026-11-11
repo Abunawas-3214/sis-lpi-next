@@ -131,8 +131,12 @@ export default function AdminPage() {
   };
 
   const handleLogout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
+    try {
+      await fetch("/api/admin/logout", { method: "POST" });
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
     setAuthenticated(false);
+    window.location.href = "/login";
   };
 
   // Approve all changes for an institution
@@ -247,13 +251,24 @@ export default function AdminPage() {
             </button>
           </form>
 
-          <div className="text-center">
-            <button
-              onClick={() => router.push("/")}
-              className="text-xs text-zinc-500 hover:text-zinc-800 transition-colors"
-            >
-              ← Kembali ke Peta GIS
-            </button>
+          <div className="text-center space-y-2 pt-2">
+            <div>
+              <a
+                href="/login"
+                className="text-xs text-emerald-600 hover:text-emerald-700 font-medium hover:underline"
+              >
+                Masuk lewat Halaman Login Terpadu →
+              </a>
+            </div>
+            <div>
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="text-xs text-zinc-500 hover:text-zinc-800 transition-colors"
+              >
+                ← Kembali ke Peta GIS
+              </button>
+            </div>
           </div>
         </div>
       </div>

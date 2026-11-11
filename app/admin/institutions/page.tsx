@@ -148,8 +148,11 @@ export default function AdminInstitutionsPage() {
   };
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/admin/logout", { method: "POST" });
+    } catch {}
+    window.location.href = "/login";
   };
 
   // Quick verification status update
