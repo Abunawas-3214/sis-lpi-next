@@ -127,12 +127,16 @@ export default defineConfig({
 
 ## 4. Aturan Logika Bisnis yang Wajib Ditaati Agen (Invariants & Business Rules)
 
-1. **Aturan Integritas Spasial Titik Fasilitas (*Spatial Containment Rule*)**:
+1. **Aturan Integritas Spasial Titik Fasilitas (*Spatial Containment Rule*) & Direct Publish**:
    - Titik fasilitas (`institution_child_points`) **HANYA DAPAT DIBUAT** jika institusi telah memiliki polygon batas lahan.
-   - Koordinat titik fasilitas (`latitude`, `longitude`) **WAJIB berada di dalam polygon** lahan milik institusi.
-   - Validasi ini dijalankan di server melalui `isPointInAnyPolygon` di [`lib/geometry.ts`](file:///D:/Abun/Projects/sis-lpi-next/lib/geometry.ts) sebelum query insert/update dieksekusi.
-2. **Aturan Siklus Status Verifikasi Lembaga**:
-   - Ketika operator lembaga mengubah profil di `/institusi/edit` atau memanipulasi polygon/child points di `/institusi/polygon-editor`, sistem **wajib otomatis mengubah `verification_status = 'pengajuan'`** dan mencatat `updated_at = new Date()`.
+   - Koordinat titik fasilitas (`latitude`, `longitude`) **WAJIB berada di dalam polygon** lahan milik institusi. Validasi ini dijalankan di server melalui `isPointInAnyPolygon` di [`lib/geometry.ts`](file:///D:/Abun/Projects/sis-lpi-next/lib/geometry.ts) sebelum insert/update.
+   - **Publikasi Langsung (Direct Publish)**: Perubahan titik fasilitas oleh institusi **langsung terbit/live tanpa menunggu verifikasi Admin** dan tidak menurunkan status verifikasi institusi menjadi `'pengajuan'`.
+2. **Aturan Siklus Status Verifikasi & Dua Kategori Perubahan**:
+   - Ketika operator lembaga mengubah profil di `/institusi/edit` atau memanipulasi polygon di `/polygon-editor`, sistem mencatat usulan ke dalam `suggested_edits` dan mengubah `verification_status = 'pengajuan'`.
+   - Perubahan dikategorikan menjadi tepat 2 kategori:
+     1. **`Perubahan data institusi`** (atribut profil, alamat, status sertifikat, luas tanah numerik, dsb.).
+     2. **`Perubahan data polygon`** (penambahan, perubahan bentuk/titik vertex, atau penghapusan polygon).
+   - Panel Verifikasi Admin (`/admin`) **dikelompokkan berdasarkan institusi**, menyajikan komparasi sebelum vs sesudah (*before vs after diff*), metrik perubahan luas dan jumlah bidang, pratinjau peta spasial, serta tombol persetujuan tingkat institusi.
    - Hanya Administrator (`super_admin` atau `admin`) yang berhak mengesahkan status menjadi `'valid'` atau menolaknya menjadi `'perbaikan'`.
 3. **Aturan Kueri Peta Kinerja Tinggi**:
    - Endpoint `/api/institutions/map` **TIDAK BOLEH** menjalankan `select *` pada 35.000 data. Hanya pilih field esensial untuk meminimalkan beban memori dan serialisasi JSON.

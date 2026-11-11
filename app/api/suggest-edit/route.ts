@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const actionType = data.action_type || "update";
+    const actionType = data.action_type || data.actionType || "update";
     if (!["update", "create", "delete"].includes(actionType)) {
       return NextResponse.json(
         { error: "action_type must be 'update', 'create', or 'delete'" },
@@ -22,16 +22,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!data.field_name) {
+    const fieldName = data.field_name || data.fieldName;
+    if (!fieldName) {
       return NextResponse.json(
         { error: "field_name is required" },
         { status: 400 }
       );
     }
 
-    let institutionName = data.institution_name;
-    let institutionId = data.institution_id;
-    let suggestedPayload = data.suggested_payload;
+    let institutionName = data.institution_name || data.institutionName;
+    let institutionId = data.institution_id || data.institutionId;
+    let suggestedPayload = data.suggested_payload || data.suggestedPayload;
+    const currentValue = data.current_value !== undefined ? data.current_value : data.currentValue;
+    const suggestedValue = data.suggested_value !== undefined ? data.suggested_value : data.suggestedValue;
+    const submitterName = data.submitter_name || data.submitterName;
+    const submitterEmail = data.submitter_email || data.submitterEmail;
+    const submitterPhone = data.submitter_phone || data.submitterPhone;
 
     if (actionType === "update" || actionType === "delete") {
       if (!institutionId) {
@@ -79,13 +85,13 @@ export async function POST(request: NextRequest) {
         institutionName: institutionName || null,
         actionType,
         suggestedPayload,
-        submitterName: data.submitter_name || null,
-        submitterRole: data.submitter_role || null,
-        submitterEmail: data.submitter_email || null,
-        fieldName: data.field_name,
-        currentValue: data.current_value || null,
-        suggestedValue: data.suggested_value || null,
-        suggestedGeometry: data.suggested_geometry || null,
+        submitterName: submitterName || null,
+        submitterRole: data.submitter_role || data.submitterRole || "Warga",
+        submitterEmail: submitterEmail || null,
+        fieldName: fieldName,
+        currentValue: currentValue || null,
+        suggestedValue: suggestedValue || null,
+        suggestedGeometry: data.suggested_geometry || data.suggestedGeometry || null,
         status: "pending",
       })
       .returning({ id: suggestedEdits.id, batchId: suggestedEdits.batchId });

@@ -234,14 +234,14 @@ export default function DetailDrawer({
         <div className="p-4 border-t border-zinc-100 bg-white flex items-center gap-2">
           <a
             href={`/institutions/${data.id}`}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-emerald-600/20"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold transition-all shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95"
           >
             <ExternalLink className="w-4 h-4" />
             <span>Lihat Detail Lengkap</span>
           </a>
           <button
             onClick={() => onOpenSuggestEdit(data)}
-            className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl text-xs font-semibold transition-all"
+            className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl text-xs font-semibold transition-all cursor-pointer active:scale-95"
             title="Usulkan Koreksi Data Lembaga"
           >
             <Edit3 className="w-3.5 h-3.5" />

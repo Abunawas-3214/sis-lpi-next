@@ -16,6 +16,12 @@ export const metadata: Metadata = {
   title: "SIS-LPI — Sistem Informasi Spasial Lembaga Pendidikan Islam",
   description:
     "Pemetaan dan Pengelolaan Aset Spasial Lembaga Pendidikan Islam di Indonesia (Pesantren, Madrasah, PTKI)",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32" },
+    ],
+  },
 };
 
 export default function RootLayout({

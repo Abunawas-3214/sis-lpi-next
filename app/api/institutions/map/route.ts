@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
       }
 
       const orClauses = searchTerms.flatMap((term) => [
+        ilike(institutions.id, `%${term}%`),
         ilike(institutions.name, `%${term}%`),
         ilike(institutions.city, `%${term}%`),
         ilike(institutions.address, `%${term}%`),

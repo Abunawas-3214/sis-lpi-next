@@ -41,6 +41,18 @@ const POLYGON_PALETTE = [
   "#d97706", // Amber
 ];
 
+/** Warna deterministik per-index polygon.
+ *  6 warna pertama pakai palet tetap agar kontras & konsisten.
+ *  Polygon ke-7+ otomatis digenerate via golden-angle HSL sehingga
+ *  selalu unik dan tidak pernah out-of-bounds.
+ */
+const getPolygonColor = (idx: number): string => {
+  if (idx < POLYGON_PALETTE.length) return POLYGON_PALETTE[idx];
+  // Golden-angle step (≈137.508°) tersebar merata di roda warna
+  const hue = Math.round((idx * 137.508) % 360);
+  return `hsl(${hue}, 60%, 42%)`;
+};
+
 const CHILD_CATEGORY_COLORS: Record<string, string> = {
   perkantoran: "#6366f1",
   pendidikan: "#059669",
@@ -228,7 +240,7 @@ export default function MiniMap({
       effectivePolygons.forEach((polyItem, idx) => {
         const latLngs = toLeafletLatLngs(polyItem.coordinates);
         if (latLngs.length >= 3) {
-          const color = POLYGON_PALETTE[idx % POLYGON_PALETTE.length];
+          const color = getPolygonColor(idx);
           const poly = L.polygon(latLngs, {
             color,
             weight: 2.5,
@@ -445,7 +457,7 @@ export default function MiniMap({
         {polygonsList.length > 0 ? (
           <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
             {polygonsList.map((poly, idx) => {
-              const color = POLYGON_PALETTE[idx % POLYGON_PALETTE.length];
+              const color = getPolygonColor(idx);
               return (
                 <div key={poly.id || idx} className="flex items-center justify-between gap-2 text-[11px]">
                   <div className="flex items-center gap-1.5 truncate">

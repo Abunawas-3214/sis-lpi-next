@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "@/lib/leaflet-safe";
 import "leaflet.markercluster";
-import { Navigation, Layers, Info, X } from "lucide-react";
+import { Navigation, Layers, X } from "lucide-react";
 
 export interface MapMarkerItem {
   id: string;
@@ -34,28 +34,16 @@ interface MapComponentProps {
 
 const BASEMAP_TILES = {
   streets: {
-    name: "OpenStreetMap",
+    name: "Peta Jalan (OSM)",
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
     maxZoom: 19,
   },
-  light: {
-    name: "Carto Light",
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    maxZoom: 19,
-  },
   satellite: {
-    name: "Esri Satellite",
+    name: "Satelit (Esri)",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution: "&copy; Esri World Imagery",
     maxZoom: 18,
-  },
-  dark: {
-    name: "Carto Dark",
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-    maxZoom: 19,
   },
 };
 
@@ -372,18 +360,18 @@ export default function MapComponent({
       />
 
       {/* Floating Basemap Selector & Controls (Top Right) */}
-      <div className="absolute top-4 right-4 z-400">
+      <div className="absolute top-3 md:top-4 right-3 md:right-4 z-400">
         {!isControlsOpen ? (
           <button
             onClick={() => setIsControlsOpen(true)}
-            title="Buka Pengaturan Peta & Informasi"
-            className="flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-zinc-200/80 hover:bg-zinc-50 text-zinc-800 transition-all text-xs font-semibold hover:shadow-2xl active:scale-95 group"
+            title="Buka Pengaturan Lapisan Peta"
+            className="flex items-center gap-2 px-3.5 py-2 md:py-2.5 bg-white/95 backdrop-blur-xl rounded-full shadow-lg shadow-zinc-900/5 border border-zinc-200/80 hover:bg-zinc-50 text-zinc-800 transition-all text-xs font-semibold hover:shadow-xl active:scale-95 group cursor-pointer"
           >
-            <Layers className="w-4 h-4 text-emerald-600" />
-            <span>Peta & Info</span>
+            <Layers className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+            <span>Lapisan Peta</span>
           </button>
         ) : (
-          <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md shadow-xl border border-zinc-200/80 rounded-2xl p-1.5 transition-all">
+          <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-xl shadow-lg shadow-zinc-900/5 border border-zinc-200/80 rounded-full p-1.5 transition-all">
             {/* Basemap Switcher */}
             <div className="flex items-center gap-1">
               {(Object.keys(BASEMAP_TILES) as Array<keyof typeof BASEMAP_TILES>).map((key) => {
@@ -392,7 +380,7 @@ export default function MapComponent({
                   <button
                     key={key}
                     onClick={() => setActiveBasemap(key)}
-                    className={`text-xs px-2.5 py-1.5 rounded-xl font-medium transition-all ${
+                    className={`text-xs px-2.5 py-1.5 rounded-full font-medium transition-all cursor-pointer ${
                       active
                         ? "bg-zinc-900 text-white shadow-sm"
                         : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
@@ -412,26 +400,16 @@ export default function MapComponent({
                 mapInstanceRef.current?.flyTo([-2.5489, 118.0149], 5, { duration: 1 });
               }}
               title="Pusatkan Peta ke Indonesia"
-              className="p-2 text-zinc-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+              className="p-2 text-zinc-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-full transition-all cursor-pointer"
             >
               <Navigation className="w-4 h-4" />
             </button>
 
-            {/* About Page Link */}
-            <a
-              href="/about"
-              title="Tentang Pengembangan SIS-LPI"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-zinc-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl text-xs font-semibold transition-all"
-            >
-              <Info className="w-4 h-4 text-emerald-600" />
-              <span>About</span>
-            </a>
-
             {/* Minimize Button */}
             <button
               onClick={() => setIsControlsOpen(false)}
-              title="Minimize Pengaturan Peta"
-              className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-xl transition-all ml-0.5"
+              title="Tutup Pengaturan Lapisan Peta"
+              className="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-full transition-all ml-0.5 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>

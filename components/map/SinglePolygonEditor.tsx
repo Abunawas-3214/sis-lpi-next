@@ -17,6 +17,7 @@ import {
   Wand2,
   PanelLeftClose,
   PanelLeftOpen,
+  Lock,
 } from "lucide-react";
 import {
   InstitutionPolygon,
@@ -44,6 +45,7 @@ interface SinglePolygonEditorProps {
   selectedChildPointId?: number | string | null;
   onToggleSidebar?: () => void;
   isSidebarOpen?: boolean;
+  readOnly?: boolean;
 }
 
 const BASEMAP_TILES = {
@@ -200,6 +202,7 @@ export default function SinglePolygonEditor({
   selectedChildPointId,
   onToggleSidebar,
   isSidebarOpen = true,
+  readOnly = false,
 }: SinglePolygonEditorProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -220,7 +223,7 @@ export default function SinglePolygonEditor({
 
   const [activeBasemap, setActiveBasemap] = useState<keyof typeof BASEMAP_TILES>("satellite");
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [mode, setMode] = useState<EditorMode>("draw");
+  const [mode, setMode] = useState<EditorMode>(readOnly ? "pan" : "draw");
   const [hasSelfIntersect, setHasSelfIntersect] = useState(false);
 
   // Keep latest values in refs
@@ -871,12 +874,19 @@ export default function SinglePolygonEditor({
 
         <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-xl shadow-md border border-zinc-200 flex items-center gap-2 text-xs">
           <span className="flex h-2.5 w-2.5 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600" />
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${readOnly ? "bg-amber-400" : "bg-emerald-400"}`} />
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${readOnly ? "bg-amber-600" : "bg-emerald-600"}`} />
           </span>
-          <span className="font-semibold text-zinc-900">
-            {isPickingChildPoint ? "Mode: Pilih Titik Fasilitas" : `Mode: ${currentTool?.label ?? ""}`}
-          </span>
+          {readOnly ? (
+            <span className="font-bold text-amber-800 flex items-center gap-1">
+              <Lock className="w-3.5 h-3.5 text-amber-600" />
+              <span>Mode Hanya Lihat (Terkunci)</span>
+            </span>
+          ) : (
+            <span className="font-semibold text-zinc-900">
+              {isPickingChildPoint ? "Mode: Pilih Titik Fasilitas" : `Mode: ${currentTool?.label ?? ""}`}
+            </span>
+          )}
           <span className="text-zinc-300">|</span>
           <span className="text-zinc-600 font-mono text-[11px]">{vertexCount} Titik</span>
           <span className="text-zinc-300">|</span>
@@ -885,7 +895,7 @@ export default function SinglePolygonEditor({
           </span>
         </div>
 
-        {vertexCount > 0 && !isPickingChildPoint && (
+        {vertexCount > 0 && !isPickingChildPoint && !readOnly && (
           <div className="flex items-center gap-1.5">
             {hasSelfIntersect && (
               <div className="flex items-center gap-1">
@@ -926,7 +936,7 @@ export default function SinglePolygonEditor({
       </div>
 
       {/* ── Left Side: Vertical Toolbar ─────────────────────────────────────── */}
-      {!isPickingChildPoint && (
+      {!isPickingChildPoint && !readOnly && (
         <div className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-1.5 pointer-events-auto">
           <div className="bg-white/95 backdrop-blur-md border border-zinc-200 rounded-2xl shadow-lg p-1.5 flex flex-col gap-1">
             {TOOLS.map((tool) => {

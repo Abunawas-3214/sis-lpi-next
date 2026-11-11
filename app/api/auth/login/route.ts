@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import { verifyPassword, signToken, UserSession } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -11,23 +11,28 @@ export async function POST(request: NextRequest) {
 
     if (!username || !password) {
       return NextResponse.json(
-        { error: "Username dan password wajib diisi" },
+        { error: "Username/Email dan password wajib diisi" },
         { status: 400 }
       );
     }
 
-    const trimmedUsername = username.trim();
+    const identifier = username.trim();
 
-    // Query user
+    // Query user berdasarkan username atau email
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.username, trimmedUsername))
+      .where(
+        or(
+          eq(users.username, identifier),
+          sql`LOWER(${users.email}) = LOWER(${identifier})`
+        )
+      )
       .limit(1);
 
     if (!user) {
       return NextResponse.json(
-        { error: "Pengguna tidak ditemukan" },
+        { error: "Pengguna dengan username atau email tersebut tidak ditemukan" },
         { status: 401 }
       );
     }
@@ -53,6 +58,7 @@ export async function POST(request: NextRequest) {
       name: user.name,
       role: user.role as "super_admin" | "admin" | "institusi",
       institutionId: user.institutionId,
+      email: user.email,
     };
 
     const token = signToken(sessionPayload);

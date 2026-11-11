@@ -158,18 +158,17 @@ export async function POST(
       })
       .returning();
 
-    // Mark institution status as 'pengajuan' whenever child points are modified
+    // Child points are published directly without waiting for admin approval
     await db
       .update(institutions)
       .set({
-        verificationStatus: "pengajuan",
         updatedAt: new Date(),
       })
       .where(eq(institutions.id, id));
 
     return NextResponse.json(
       {
-        message: "Titik fasilitas berhasil ditambahkan. Status institusi kini menunggu validasi Admin.",
+        message: "Titik fasilitas berhasil ditambahkan dan langsung dipublikasikan.",
         data: inserted,
       },
       { status: 201 }

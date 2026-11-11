@@ -26,12 +26,15 @@ import {
   Check,
   X,
   UserPlus,
+  User,
 } from "lucide-react";
+import UserProfileModal from "@/components/profile/UserProfileModal";
 
 export default function AdminInstitutionsPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Institution List State
   const [institutions, setInstitutions] = useState<any[]>([]);
@@ -362,6 +365,15 @@ export default function AdminInstitutionsPage() {
           >
             <Plus className="w-3.5 h-3.5" />
             <span>+ Tambah Institusi</span>
+          </button>
+
+          <button
+            onClick={() => setIsProfileOpen(true)}
+            className="px-3 py-1.5 bg-zinc-100 hover:bg-emerald-50 text-zinc-700 hover:text-emerald-700 border border-zinc-200 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5"
+            title="Kelola Profil Akun & Kata Sandi"
+          >
+            <User className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Profil Akun</span>
           </button>
 
           <button
@@ -803,6 +815,15 @@ export default function AdminInstitutionsPage() {
                 />
               </div>
 
+              {/* Titik Pusat Lembaga */}
+              <div>
+                <p className="text-xs font-bold text-zinc-700 mb-2 flex items-center gap-1.5">
+                  <span>📍</span> Titik Pusat Lembaga
+                </p>
+                <p className="text-[11px] text-zinc-500 mb-2">
+                  Koordinat titik tengah lembaga yang tampil sebagai pin marker di peta. Berbeda dari polygon batas lahan.
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-zinc-700 mb-1">Latitude</label>
@@ -1135,6 +1156,15 @@ export default function AdminInstitutionsPage() {
           </div>
         </div>
       )}
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        currentUser={currentUser}
+        onUpdated={(updatedUser) => {
+          setCurrentUser((prev: any) => ({ ...prev, ...updatedUser }));
+        }}
+      />
     </div>
   );
 }

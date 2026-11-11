@@ -6,6 +6,7 @@ import Sidebar from "@/components/sidebar/Sidebar";
 import DetailDrawer from "@/components/detail/DetailDrawer";
 import StatsModal from "@/components/stats/StatsModal";
 import SuggestEditModal from "@/components/modals/SuggestEditModal";
+import FloatingHeader from "@/components/header/FloatingHeader";
 import { Loader2 } from "lucide-react";
 
 // Dynamically import Leaflet MapComponent with SSR disabled
@@ -51,16 +52,22 @@ export default function Home() {
 
   // Fetch Provinces
   useEffect(() => {
-    fetch("/api/provinces")
+    const controller = new AbortController();
+    fetch("/api/provinces", { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setProvinces(data);
       })
-      .catch((err) => console.error("Error loading provinces:", err));
+      .catch((err) => {
+        if (err.name !== "AbortError") console.error("Error loading provinces:", err);
+      });
+    return () => controller.abort();
   }, []);
 
-  // Fetch Map Markers with Debounce
+  // Fetch Map Markers with Debounce + AbortController
   useEffect(() => {
+    const controller = new AbortController();
+
     const timer = setTimeout(() => {
       const params = new URLSearchParams();
       if (search.trim()) params.set("search", search.trim());
@@ -70,15 +77,26 @@ export default function Home() {
       if (selectedLevel) params.set("level", selectedLevel);
       if (selectedAccreditation) params.set("accreditation", selectedAccreditation);
 
-      fetch(`/api/institutions/map?${params.toString()}`)
-        .then((res) => res.json())
+      fetch(`/api/institutions/map?${params.toString()}`, { signal: controller.signal })
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
         .then((data) => {
           if (Array.isArray(data)) setItems(data);
         })
-        .catch((err) => console.error("Error loading map items:", err));
-    }, 250);
+        .catch((err) => {
+          // AbortError is expected when filter changes quickly — suppress it
+          if (err.name !== "AbortError") {
+            console.error("Error loading map items:", err);
+          }
+        });
+    }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [
     search,
     selectedProvince,
@@ -104,6 +122,9 @@ export default function Home() {
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-slate-900">
+      {/* Floating Modern Header */}
+      <FloatingHeader onOpenStatsModal={() => setIsStatsModalOpen(true)} />
+
       {/* Interactive Map */}
       <MapComponent
         items={items}

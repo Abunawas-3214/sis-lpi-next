@@ -51,17 +51,16 @@ export async function DELETE(
       );
     }
 
-    // Set institution verification status to 'pengajuan'
+    // Child points are published directly without waiting for admin approval
     await db
       .update(institutions)
       .set({
-        verificationStatus: "pengajuan",
         updatedAt: new Date(),
       })
       .where(eq(institutions.id, id));
 
     return NextResponse.json({
-      message: "Titik fasilitas berhasil dihapus. Status institusi kini menunggu validasi Admin.",
+      message: "Titik fasilitas berhasil dihapus dan langsung dipublikasikan.",
       data: deleted[0],
     });
   } catch (error: any) {
@@ -169,17 +168,16 @@ export async function PATCH(
       );
     }
 
-    // Set institution verification status to 'pengajuan'
+    // Child points are published directly without waiting for admin approval
     await db
       .update(institutions)
       .set({
-        verificationStatus: "pengajuan",
         updatedAt: new Date(),
       })
       .where(eq(institutions.id, id));
 
     return NextResponse.json({
-      message: "Titik fasilitas berhasil diperbarui. Status institusi kini menunggu validasi Admin.",
+      message: "Titik fasilitas berhasil diperbarui dan langsung dipublikasikan.",
       data: updated,
     });
   } catch (error: any) {

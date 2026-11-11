@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   PanelLeftClose,
   PanelLeftOpen,
+  Lock,
 } from "lucide-react";
 import {
   normalizePolygons,
@@ -109,6 +110,7 @@ function TambahPolygonContent() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -153,6 +155,9 @@ function TambahPolygonContent() {
 
         const item = data.institution;
         setInst(item);
+
+        const locked = Boolean(data.isLocked || item.verificationStatus === "pengajuan");
+        setIsLocked(locked);
 
         if (item.latitude && item.longitude) {
           setCenterCoords([item.latitude, item.longitude]);
@@ -222,6 +227,12 @@ function TambahPolygonContent() {
   };
 
   const handleSave = async (andNavigate = true) => {
+    if (isLocked) {
+      setErrorMsg("Pengajuan perubahan data sedang dalam peninjauan oleh Admin. Anda tidak dapat menambah bidang baru.");
+      setShowUnsavedDialog(false);
+      return;
+    }
+
     if (!newPolygon.name.trim()) {
       setErrorMsg("Nama bidang tanah wajib diisi.");
       setShowUnsavedDialog(false);
@@ -363,14 +374,23 @@ function TambahPolygonContent() {
 
           <button
             type="button"
-            disabled={saving || vertexCount < 3}
+            disabled={isLocked || saving || vertexCount < 3}
             onClick={() => handleSave(true)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed ${
+              isLocked
+                ? "bg-zinc-200 text-zinc-500 cursor-not-allowed"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white"
+            }`}
           >
             {saving ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 <span>Menyimpan...</span>
+              </>
+            ) : isLocked ? (
+              <>
+                <Lock className="w-3.5 h-3.5" />
+                <span>Terkunci (Sedang Ditinjau Admin)</span>
               </>
             ) : (
               <>
@@ -381,6 +401,26 @@ function TambahPolygonContent() {
           </button>
         </div>
       </header>
+
+      {/* Top Banner when Locked */}
+      {isLocked && (
+        <div className="bg-amber-500 text-white px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs shadow-sm z-30 shrink-0">
+          <div className="flex items-center gap-2">
+            <Lock className="w-4 h-4 shrink-0" />
+            <span className="font-bold">Pengajuan Sedang Ditinjau Admin (Data Terkunci)</span>
+            <span className="hidden md:inline text-amber-100">
+              — Anda tidak dapat menambah bidang polygon baru hingga peninjauan usulan sebelumnya disetujui atau ditolak oleh Admin.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push(backUrl)}
+            className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg font-bold text-[11px] transition-all"
+          >
+            Kembali ke Formulir
+          </button>
+        </div>
+      )}
 
       {/* Main Content: Sidebar + Full Map */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -415,13 +455,18 @@ function TambahPolygonContent() {
               </label>
               <input
                 type="text"
+                disabled={isLocked}
                 value={newPolygon.name}
                 onChange={(e) => {
                   setNewPolygon((prev) => ({ ...prev, name: e.target.value }));
                   setIsDirty(true);
                 }}
                 placeholder="Contoh: Kampus 2 (Lahan Perluasan)"
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className={`w-full px-3 py-2 rounded-xl text-xs font-semibold ${
+                  isLocked
+                    ? "bg-zinc-100 text-zinc-600 border border-zinc-200 cursor-not-allowed select-none"
+                    : "bg-zinc-50 border border-zinc-200 text-zinc-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                }`}
               />
               <p className="text-[10px] text-zinc-400">
                 Beri nama pembeda jika institusi memiliki beberapa lokasi bidang lahan terpisah.
@@ -517,6 +562,7 @@ function TambahPolygonContent() {
             otherPolygons={existingPolygons}
             childPoints={[]}
             onPolygonChange={handlePolygonChange}
+            readOnly={isLocked}
             onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             isSidebarOpen={isSidebarOpen}
           />

@@ -10,6 +10,7 @@ export interface UserSession {
   name: string;
   role: "super_admin" | "admin" | "institusi";
   institutionId: string | null;
+  email?: string | null;
 }
 
 export function hashPassword(password: string): string {

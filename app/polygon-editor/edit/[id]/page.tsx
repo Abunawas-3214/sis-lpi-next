@@ -22,6 +22,7 @@ import {
   Edit3,
   MapPin,
   Plus,
+  Lock,
 } from "lucide-react";
 import {
   normalizePolygons,
@@ -135,6 +136,7 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -188,6 +190,14 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
 
         const item = data.institution;
         setInst(item);
+
+        const isReadonlyParam = searchParams.get("readonly") === "1";
+        const pendingPolyIds = Array.isArray(data.pendingPolygonIds) ? data.pendingPolygonIds : [];
+        const isThisPolyPending =
+          pendingPolyIds.includes(targetPolyId) ||
+          pendingPolyIds.includes(decodeURIComponent(targetPolyId));
+        const locked = Boolean(isThisPolyPending || isReadonlyParam);
+        setIsLocked(locked);
 
         if (item.latitude && item.longitude) {
           setCenterCoords([item.latitude, item.longitude]);
@@ -681,7 +691,7 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          {isDirty && (
+          {isDirty && !isLocked && (
             <button
               type="button"
               disabled={saving || deleting}
@@ -696,29 +706,44 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
 
           <button
             type="button"
-            disabled={deleting || saving}
+            disabled={isLocked || deleting || saving}
             onClick={handleDeletePolygon}
-            className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5"
-            title="Hapus bidang ini"
+            className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              isLocked
+                ? "bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed"
+                : "bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
+            }`}
+            title={isLocked ? "Hapus dinonaktifkan selama verifikasi admin" : "Hapus bidang ini"}
           >
             {deleting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : isLocked ? (
+              <Lock className="w-3.5 h-3.5" />
             ) : (
               <Trash2 className="w-3.5 h-3.5" />
             )}
-            <span className="hidden sm:inline">Hapus Bidang</span>
+            <span className="hidden sm:inline">{isLocked ? "Hapus Terkunci" : "Hapus Bidang"}</span>
           </button>
 
           <button
             type="button"
-            disabled={saving || deleting || vertexCount < 3}
+            disabled={isLocked || saving || deleting || vertexCount < 3}
             onClick={() => handleSave(true)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50"
+            className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-60 ${
+              isLocked
+                ? "bg-zinc-200 text-zinc-500 cursor-not-allowed"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white"
+            }`}
           >
             {saving ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 <span>Menyimpan...</span>
+              </>
+            ) : isLocked ? (
+              <>
+                <Lock className="w-3.5 h-3.5" />
+                <span>Terkunci (Sedang Ditinjau Admin)</span>
               </>
             ) : (
               <>
@@ -729,6 +754,26 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
           </button>
         </div>
       </header>
+
+      {/* Top Banner when Locked */}
+      {isLocked && (
+        <div className="bg-amber-500 text-white px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs shadow-sm z-30 shrink-0">
+          <div className="flex items-center gap-2">
+            <Lock className="w-4 h-4 shrink-0" />
+            <span className="font-bold">Bidang Polygon Dikunci</span>
+            <span className="hidden md:inline text-amber-100">
+              — Perubahan bentuk/luas bidang ini sedang menunggu verifikasi Admin. Pengelolaan titik fasilitas tetap dapat dilakukan di bawah.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push(backUrl)}
+            className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg font-bold text-[11px] transition-all"
+          >
+            Kembali ke Formulir
+          </button>
+        </div>
+      )}
 
       {/* Main Content Layout */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -766,12 +811,17 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
               </label>
               <input
                 type="text"
+                disabled={isLocked}
                 value={currentPolygon.name}
                 onChange={(e) => {
                   setCurrentPolygon((prev) => (prev ? { ...prev, name: e.target.value } : null));
                   setIsDirty(true);
                 }}
-                className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className={`w-full px-3 py-2 rounded-xl text-xs font-semibold ${
+                  isLocked
+                    ? "bg-zinc-100 text-zinc-600 border border-zinc-200 cursor-not-allowed select-none"
+                    : "bg-zinc-50 border border-zinc-200 text-zinc-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                }`}
               />
             </div>
 
@@ -839,7 +889,7 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
                   <Building className="w-3.5 h-3.5 text-purple-600" />
                   <span>Fasilitas di Bidang Ini ({childPoints.length})</span>
                 </div>
-                {!isPickingChildPoint && !editingChildPoint && !pointCoords && (
+                {!isPickingChildPoint && !editingChildPoint && !pointCoords && !isLocked && !isDirty && (
                   <button
                     type="button"
                     onClick={handleStartAddPoint}
@@ -850,6 +900,28 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
                   </button>
                 )}
               </div>
+
+              {/* Status / Guidance Notice */}
+              {isDirty && (
+                <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-start gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                  <span>Bentuk bidang sedang diubah. Simpan atau batalkan perubahan polygon terlebih dahulu sebelum mengelola titik fasilitas.</span>
+                </div>
+              )}
+
+              {isLocked && (
+                <div className="p-2.5 bg-zinc-100 border border-zinc-200 rounded-xl text-[11px] text-zinc-700 flex items-start gap-2">
+                  <Lock className="w-3.5 h-3.5 text-zinc-500 shrink-0 mt-0.5" />
+                  <span>Bidang ini sedang dalam proses verifikasi Admin atas perubahan bentuk/luas. Titik fasilitas dapat dikelola kembali setelah usulan disetujui.</span>
+                </div>
+              )}
+
+              {!isLocked && !isDirty && (
+                <div className="p-2 bg-emerald-50/70 border border-emerald-200/70 rounded-xl text-[10px] text-emerald-800 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <span>Perubahan titik fasilitas terbit langsung tanpa verifikasi Admin.</span>
+                </div>
+              )}
 
               {/* Guide banner when in picking mode */}
               {isPickingChildPoint && !pointCoords && (
@@ -1095,26 +1167,28 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
                           </div>
 
                           {/* Action Buttons: Edit, Delete */}
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleStartEditPoint(cp)}
-                              className="p-1.5 bg-zinc-50 hover:bg-purple-100 text-zinc-600 hover:text-purple-700 rounded-lg transition-colors"
-                              title="Edit fasilitas ini"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                            {cp.id && (
+                          {!isLocked && !isDirty && (
+                            <div className="flex items-center gap-1 shrink-0">
                               <button
                                 type="button"
-                                onClick={() => handleDeleteChildPoint(cp.id!)}
-                                className="p-1.5 bg-zinc-50 hover:bg-red-100 text-zinc-600 hover:text-red-700 rounded-lg transition-colors"
-                                title="Hapus fasilitas ini"
+                                onClick={() => handleStartEditPoint(cp)}
+                                className="p-1.5 bg-zinc-50 hover:bg-purple-100 text-zinc-600 hover:text-purple-700 rounded-lg transition-colors"
+                                title="Edit fasilitas ini"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Edit3 className="w-3.5 h-3.5" />
                               </button>
-                            )}
-                          </div>
+                              {cp.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteChildPoint(cp.id!)}
+                                  className="p-1.5 bg-zinc-50 hover:bg-red-100 text-zinc-600 hover:text-red-700 rounded-lg transition-colors"
+                                  title="Hapus fasilitas ini"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Summary of Variables & Notes */}
@@ -1160,6 +1234,7 @@ function EditPolygonContent({ paramsPromise }: { paramsPromise: Promise<{ id: st
             otherPolygons={allPolygons}
             childPoints={childPoints}
             onPolygonChange={handlePolygonChange}
+            readOnly={isLocked}
             isPickingChildPoint={isPickingChildPoint}
             onPickChildPoint={(lat, lng) => {
               setPointCoords({ lat, lng });

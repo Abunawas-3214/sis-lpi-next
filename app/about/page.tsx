@@ -3,14 +3,8 @@
 import Link from "next/link";
 import {
   ArrowLeft,
-  MapPin,
   Layers,
-  Database,
-  ShieldCheck,
   Building2,
-  Code2,
-  Cpu,
-  GraduationCap,
   HeartHandshake,
   CheckCircle2,
 } from "lucide-react";
@@ -41,19 +35,19 @@ export default function AboutPage() {
         <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-sm border border-zinc-200/80 space-y-4 text-center sm:text-left relative overflow-hidden">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
             <Layers className="w-3.5 h-3.5" />
-            <span>Dokumentasi & Ringkasan Pengembangan</span>
+            <span>Tentang SIS-LPI</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-extrabold text-zinc-900 tracking-tight leading-tight">
             Sistem Informasi Spasial Lembaga Pendidikan Islam (SIS-LPI)
           </h1>
 
-          <p className="text-sm sm:text-base text-zinc-600 leading-relaxed max-w-2xl">
-            Platform Web GIS modern berbasis Next.js dan PostGIS untuk memetakan, menginventarisasi, dan mengelola sebaran geografis serta aset lahan lembaga pendidikan Islam di Indonesia.
+          <p className="text-sm sm:text-base text-zinc-600 leading-relaxed max-w-3xl">
+            SIS-LPI adalah platform informasi spasial berbasis GIS untuk membantu Lembaga Pendidikan Islam memetakan, mendokumentasikan, memantau, dan mengoptimalkan aset lahan. Mengintegrasikan prinsip amānah, khilāfah, dan mīzān dengan pendekatan Strategic Adaptive Land Governance, SIS-LPI menghadirkan pengelolaan lahan yang berbasis data sekaligus menjadi ruang pembelajaran ekologis bagi generasi masa depan.
           </p>
         </div>
 
-        {/* Latar Belakang & Tujuan */}
+        {/* Latar Belakang & Visi */}
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-zinc-200/80 space-y-6">
           <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
             <HeartHandshake className="w-5 h-5 text-emerald-600" />
@@ -141,38 +135,11 @@ export default function AboutPage() {
           </div>
         </div>
 
-        {/* Stack Teknologi */}
-        <div className="bg-white rounded-3xl p-8 shadow-sm border border-zinc-200/80 space-y-6">
-          <h2 className="text-lg font-bold text-zinc-900 flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-emerald-600" />
-            Arsitektur & Stack Teknologi
-          </h2>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
-            <div className="p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
-              <strong className="block text-zinc-900 font-bold">Next.js 16</strong>
-              <span className="text-[10px] text-zinc-500">Turbopack & App Router</span>
-            </div>
-            <div className="p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
-              <strong className="block text-zinc-900 font-bold">PostgreSQL / PostGIS</strong>
-              <span className="text-[10px] text-zinc-500">Spatial Index GIST</span>
-            </div>
-            <div className="p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
-              <strong className="block text-zinc-900 font-bold">Drizzle ORM</strong>
-              <span className="text-[10px] text-zinc-500">Type-Safe SQL Query</span>
-            </div>
-            <div className="p-3 bg-zinc-50 border border-zinc-100 rounded-xl">
-              <strong className="block text-zinc-900 font-bold">Leaflet & Clustering</strong>
-              <span className="text-[10px] text-zinc-500">Fast Interactive Map</span>
-            </div>
-          </div>
-        </div>
-
         {/* Footer Nav */}
         <div className="text-center pt-4">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl shadow-lg shadow-emerald-600/25 transition-all text-xs"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl shadow-lg shadow-emerald-600/25 transition-all text-xs cursor-pointer active:scale-95"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Kembali ke Peta Spasial</span>

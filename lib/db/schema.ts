@@ -67,6 +67,7 @@ export const users = pgTable("users", {
   index("idx_users_username").using("btree", table.username.asc().nullsLast()),
   index("idx_users_role").using("btree", table.role.asc().nullsLast()),
   index("idx_users_institution_id").using("btree", table.institutionId.asc().nullsLast()),
+  index("idx_users_email").using("btree", table.email.asc().nullsLast()),
 ]);
 
 export const suggestedEdits = pgTable("suggested_edits", {

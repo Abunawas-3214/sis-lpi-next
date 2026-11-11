@@ -6,9 +6,7 @@ import {
   Filter,
   Layers,
   MapPin,
-  LogIn,
   PlusCircle,
-  BarChart3,
   ChevronDown,
   ChevronUp,
   X,
@@ -39,7 +37,7 @@ interface SidebarProps {
   };
   onToggleLayer: (layer: keyof SidebarProps["visibleLayers"]) => void;
   onOpenSuggestModal: () => void;
-  onOpenStatsModal: () => void;
+  onOpenStatsModal?: () => void;
   totalFiltered: number;
 }
 
@@ -80,21 +78,16 @@ export default function Sidebar({
         <button
           onClick={() => setIsOpen(true)}
           title="Buka Panel Filter & Pencarian"
-          className="fixed md:absolute top-4 left-4 z-400 flex items-center gap-2.5 px-3.5 py-2.5 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-zinc-200/80 hover:bg-zinc-50 text-zinc-800 transition-all text-xs font-semibold hover:shadow-2xl active:scale-95 group"
+          className="fixed md:absolute top-3 md:top-4 left-3 md:left-4 z-400 flex items-center gap-2 px-3.5 py-2 md:py-2.5 bg-white/95 backdrop-blur-xl rounded-full shadow-lg shadow-zinc-900/5 border border-zinc-200/80 hover:bg-zinc-50 text-zinc-800 transition-all text-xs font-semibold hover:shadow-xl active:scale-95 group cursor-pointer"
         >
-          <div className="w-6 h-6 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-[10px] shadow-sm">
-            SIS
-          </div>
-          <div className="flex items-center gap-1.5 text-zinc-700 group-hover:text-zinc-900">
-            <PanelLeftOpen className="w-4 h-4 text-emerald-600" />
-            <span>Panel Kontrol ({totalFiltered.toLocaleString()})</span>
-          </div>
+          <PanelLeftOpen className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+          <span>Panel Kontrol ({totalFiltered.toLocaleString()})</span>
         </button>
       )}
 
       {/* Main Sidebar Floating Panel */}
       <aside
-        className={`fixed md:absolute top-4 left-4 z-400 w-84 md:w-96 max-h-[calc(100vh-2rem)] flex flex-col bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-zinc-200/80 transition-all duration-300 ${
+        className={`fixed md:absolute top-3 md:top-4 left-3 md:left-4 z-400 w-84 md:w-96 max-h-[calc(100vh-2rem)] flex flex-col bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-zinc-200/80 transition-all duration-300 ${
           isOpen
             ? "translate-x-0 opacity-100 pointer-events-auto"
             : "-translate-x-[110%] opacity-0 pointer-events-none"
@@ -108,29 +101,15 @@ export default function Sidebar({
             </div>
             <div>
               <h1 className="text-sm font-bold text-zinc-900 tracking-tight leading-tight">
-                SIS-LPI
+                Panel Filter & Kontrol
               </h1>
               <p className="text-[11px] text-zinc-500 leading-tight">
-                Sistem Informasi Spasial LPI
+                Pencarian Spasial & Lapisan Lembaga
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1">
-            <button
-              onClick={onOpenStatsModal}
-              title="Statistik Nasional"
-              className="p-2 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-            >
-              <BarChart3 className="w-4 h-4" />
-            </button>
-            <a
-              href="/login"
-              title="Masuk / Login"
-              className="p-2 text-zinc-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-            >
-              <LogIn className="w-4 h-4" />
-            </a>
             <button
               onClick={() => setIsOpen(false)}
               title="Sembunyikan / Minimize Panel"
@@ -166,7 +145,7 @@ export default function Sidebar({
           {/* Action: Usulkan Lembaga Baru */}
           <button
             onClick={onOpenSuggestModal}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md shadow-emerald-600/20 transition-all text-xs"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md shadow-emerald-600/20 transition-all text-xs cursor-pointer active:scale-95"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Usulkan Lembaga Baru</span>

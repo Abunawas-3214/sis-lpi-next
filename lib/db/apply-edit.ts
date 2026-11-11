@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
-import { institutions, suggestedEdits, SuggestedEdit } from "@/lib/db/schema";
+import { institutions, suggestedEdits, institutionPolygons, SuggestedEdit } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { normalizePolygons, calculateAreaM2, toLeafletLatLngs } from "@/lib/geometry";
 
 export async function applySuggestedEdit(edit: SuggestedEdit) {
   const actionType = edit.actionType || "update";
@@ -179,7 +180,45 @@ export async function applySuggestedEdit(edit: SuggestedEdit) {
       }
     }
 
-    if (edit.suggestedGeometry && (field === "land_geometry" || field === "pengajuan_data_dan_polygon")) {
+    if (field === "perubahan_data_institusi") {
+      let payload = edit.suggestedPayload as any;
+      if (typeof payload === "string") {
+        try { payload = JSON.parse(payload); } catch {}
+      }
+      const fullData = payload?.fullData || {};
+      // Map camelCase keys from draftData to institution columns
+      const directKeys = [
+        "name", "type", "level", "status", "address", "province", "city",
+        "accreditation", "landTotalAreaM2", "landCertificateStatus", "landCertificateNumber",
+        "landUseCategories", "landNjop", "landPricePerM2", "landEstimatedTotalValue", "notes",
+        "latitude", "longitude",
+      ];
+      for (const k of directKeys) {
+        if (fullData[k] !== undefined) {
+          updateData[k] = fullData[k];
+        }
+      }
+      // Also handle snake_case keys for backwards compat
+      for (const [k, v] of Object.entries(fullData)) {
+        if (fieldMap[k]) {
+          updateData[fieldMap[k]] = v;
+        }
+      }
+      // Rebuild geom if lat/lng changed
+      if (updateData.latitude !== undefined && updateData.longitude !== undefined) {
+        const lat = updateData.latitude;
+        const lng = updateData.longitude;
+        if (lat !== null && lng !== null) {
+          updateData.coordinatePrecision = "exact";
+          updateData.geom = sql`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`;
+        }
+      }
+    }
+
+    if (
+      edit.suggestedGeometry &&
+      (field === "land_geometry" || field === "pengajuan_data_dan_polygon" || field === "perubahan_polygon")
+    ) {
       updateData.landGeometry = edit.suggestedGeometry;
     }
   }
@@ -188,6 +227,32 @@ export async function applySuggestedEdit(edit: SuggestedEdit) {
     .update(institutions)
     .set(updateData)
     .where(eq(institutions.id, edit.institutionId));
+
+  // Sync to institution_polygons table if landGeometry was updated
+  if (updateData.landGeometry && edit.institutionId) {
+    const normalized = normalizePolygons(updateData.landGeometry, inst.name);
+    for (const p of normalized) {
+      const area = p.area_m2 || calculateAreaM2(toLeafletLatLngs(p.coordinates));
+      await db
+        .insert(institutionPolygons)
+        .values({
+          id: p.id,
+          institutionId: edit.institutionId,
+          name: p.name,
+          coordinates: p.coordinates,
+          areaM2: area,
+        })
+        .onConflictDoUpdate({
+          target: institutionPolygons.id,
+          set: {
+            name: p.name,
+            coordinates: p.coordinates,
+            areaM2: area,
+            updatedAt: new Date(),
+          },
+        });
+    }
+  }
 
   return edit.institutionId;
 }
