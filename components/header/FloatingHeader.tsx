@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { BarChart3, Info, LogIn, User, LogOut } from "lucide-react";
 
 interface FloatingHeaderProps {
@@ -48,7 +49,7 @@ export default function FloatingHeader({ onOpenStatsModal }: FloatingHeaderProps
         className="group bg-white/95 backdrop-blur-xl border border-zinc-200/80 shadow-lg shadow-zinc-900/5 rounded-full px-3.5 sm:px-4 py-1.5 md:py-2 flex items-center gap-2 sm:gap-3 transition-all duration-300 ease-out hover:shadow-xl hover:border-zinc-300"
       >
         {/* 1. Logo Aplikasi: Badge SIS + SIS-LPI + Subjudul 2 Baris */}
-        <a
+        <Link
           href="/"
           title="Sistem Informasi Spasial Lembaga Pendidikan Islam"
           className="flex items-center gap-2 sm:gap-2.5 shrink-0 group/logo"
@@ -66,7 +67,7 @@ export default function FloatingHeader({ onOpenStatsModal }: FloatingHeaderProps
               <span className="block whitespace-nowrap">Lembaga Pendidikan Islam</span>
             </div>
           </div>
-        </a>
+        </Link>
 
         {/* Divider */}
         <div className="h-5 w-px bg-zinc-200 shrink-0" />
@@ -123,21 +124,21 @@ export default function FloatingHeader({ onOpenStatsModal }: FloatingHeaderProps
           </button>
 
           {/* Tombol Tentang */}
-          <a
+          <Link
             href="/about"
             title="Tentang SIS-LPI & Metodologi GIS"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-zinc-700 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 transition-all border border-transparent active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Info className="w-3.5 h-3.5 text-emerald-600" />
             <span>Tentang</span>
-          </a>
+          </Link>
         </div>
 
         {/* 4. Bagian Akun / Login di Ujung Kanan */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 pl-0.5">
           {currentUser ? (
             <div className="flex items-center gap-1 sm:gap-1.5">
-              <a
+              <Link
                 href={currentUser.role === "institusi" ? "/institusi/edit" : "/admin"}
                 title={`Buka Dashboard (${currentUser.name})`}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/30 transition-all active:scale-95 whitespace-nowrap cursor-pointer"
@@ -146,7 +147,7 @@ export default function FloatingHeader({ onOpenStatsModal }: FloatingHeaderProps
                 <span className="max-w-[85px] sm:max-w-[105px] truncate">
                   {displayName}
                 </span>
-              </a>
+              </Link>
 
               <button
                 onClick={handleLogout}
@@ -157,14 +158,14 @@ export default function FloatingHeader({ onOpenStatsModal }: FloatingHeaderProps
               </button>
             </div>
           ) : (
-            <a
+            <Link
               href="/login"
               title="Masuk ke Sistem (Admin / Institusi)"
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/30 transition-all active:scale-95 whitespace-nowrap cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Login</span>
-            </a>
+            </Link>
           )}
         </div>
       </div>

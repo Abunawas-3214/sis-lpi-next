@@ -13,6 +13,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  Loader2,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -39,6 +40,7 @@ interface SidebarProps {
   onOpenSuggestModal: () => void;
   onOpenStatsModal?: () => void;
   totalFiltered: number;
+  isLoading?: boolean;
 }
 
 export default function Sidebar({
@@ -60,6 +62,7 @@ export default function Sidebar({
   onOpenSuggestModal,
   onOpenStatsModal,
   totalFiltered,
+  isLoading = false,
 }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openSections, setOpenSections] = useState({
@@ -80,8 +83,17 @@ export default function Sidebar({
           title="Buka Panel Filter & Pencarian"
           className="fixed md:absolute top-3 md:top-4 left-3 md:left-4 z-400 flex items-center gap-2 px-3.5 py-2 md:py-2.5 bg-white/95 backdrop-blur-xl rounded-full shadow-lg shadow-zinc-900/5 border border-zinc-200/80 hover:bg-zinc-50 text-zinc-800 transition-all text-xs font-semibold hover:shadow-xl active:scale-95 group cursor-pointer"
         >
-          <PanelLeftOpen className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-          <span>Panel Kontrol ({totalFiltered.toLocaleString()})</span>
+          {isLoading && totalFiltered === 0 ? (
+            <>
+              <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+              <span>Memuat Lembaga...</span>
+            </>
+          ) : (
+            <>
+              <PanelLeftOpen className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
+              <span>Panel Kontrol ({totalFiltered.toLocaleString()})</span>
+            </>
+          )}
         </button>
       )}
 

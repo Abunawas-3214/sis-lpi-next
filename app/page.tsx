@@ -8,6 +8,12 @@ import StatsModal from "@/components/stats/StatsModal";
 import SuggestEditModal from "@/components/modals/SuggestEditModal";
 import FloatingHeader from "@/components/header/FloatingHeader";
 import { Loader2 } from "lucide-react";
+import {
+  getDefaultMapCache,
+  setDefaultMapCache,
+  getProvincesCache,
+  setProvincesCache,
+} from "@/lib/map-cache";
 
 // Dynamically import Leaflet MapComponent with SSR disabled
 const MapComponent = dynamic(
@@ -26,8 +32,9 @@ const MapComponent = dynamic(
 );
 
 export default function Home() {
-  const [items, setItems] = useState<any[]>([]);
-  const [provinces, setProvinces] = useState<string[]>([]);
+  const [items, setItems] = useState<any[]>(() => getDefaultMapCache() || []);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !getDefaultMapCache());
+  const [provinces, setProvinces] = useState<string[]>(() => getProvincesCache() || []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Filters
@@ -52,11 +59,20 @@ export default function Home() {
 
   // Fetch Provinces
   useEffect(() => {
+    const cached = getProvincesCache();
+    if (cached && cached.length > 0) {
+      setProvinces(cached);
+      return;
+    }
+
     const controller = new AbortController();
     fetch("/api/provinces", { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data)) setProvinces(data);
+        if (Array.isArray(data)) {
+          setProvinces(data);
+          setProvincesCache(data);
+        }
       })
       .catch((err) => {
         if (err.name !== "AbortError") console.error("Error loading provinces:", err);
@@ -64,9 +80,28 @@ export default function Home() {
     return () => controller.abort();
   }, []);
 
-  // Fetch Map Markers with Debounce + AbortController
+  // Fetch Map Markers with Debounce + Cache + AbortController
   useEffect(() => {
+    const isDefault =
+      !search.trim() &&
+      !selectedProvince &&
+      !selectedType &&
+      !selectedStatus &&
+      !selectedLevel &&
+      !selectedAccreditation;
+
+    // Fast-path: jika filter default dan sudah ada di memory cache, gunakan langsung
+    const cached = getDefaultMapCache();
+    if (isDefault && cached && cached.length > 0) {
+      setItems(cached);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     const controller = new AbortController();
+    // Pada load default pertama kali jangan tunda 300ms, langsung ambil data!
+    const delay = isDefault ? 0 : 300;
 
     const timer = setTimeout(() => {
       const params = new URLSearchParams();
@@ -83,15 +118,21 @@ export default function Home() {
           return res.json();
         })
         .then((data) => {
-          if (Array.isArray(data)) setItems(data);
+          if (Array.isArray(data)) {
+            setItems(data);
+            if (isDefault) {
+              setDefaultMapCache(data);
+            }
+          }
+          setIsLoading(false);
         })
         .catch((err) => {
-          // AbortError is expected when filter changes quickly — suppress it
           if (err.name !== "AbortError") {
             console.error("Error loading map items:", err);
+            setIsLoading(false);
           }
         });
-    }, 300);
+    }, delay);
 
     return () => {
       clearTimeout(timer);
@@ -131,6 +172,7 @@ export default function Home() {
         selectedId={selectedId}
         onSelectItem={(id) => setSelectedId(id)}
         visibleLayers={visibleLayers}
+        isLoading={isLoading}
       />
 
       {/* Floating Control Sidebar */}
@@ -153,6 +195,7 @@ export default function Home() {
         onOpenSuggestModal={handleOpenSuggestNew}
         onOpenStatsModal={() => setIsStatsModalOpen(true)}
         totalFiltered={items.length}
+        isLoading={isLoading}
       />
 
       {/* Slide-over Detail Drawer */}

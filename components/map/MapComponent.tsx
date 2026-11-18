@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import L from "@/lib/leaflet-safe";
 import "leaflet.markercluster";
-import { Navigation, Layers, X } from "lucide-react";
+import { Navigation, Layers, X, Loader2 } from "lucide-react";
+import { getPolygonsCache, setPolygonsCache } from "@/lib/map-cache";
 
 export interface MapMarkerItem {
   id: string;
@@ -30,6 +31,7 @@ interface MapComponentProps {
     universitas_islam: boolean;
     polygons: boolean;
   };
+  isLoading?: boolean;
 }
 
 const BASEMAP_TILES = {
@@ -74,6 +76,7 @@ export default function MapComponent({
   selectedId,
   onSelectItem,
   visibleLayers,
+  isLoading = false,
 }: MapComponentProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -142,82 +145,92 @@ export default function MapComponent({
     });
     resizeObserver.observe(mapContainerRef.current);
 
-    // Load Polygon Boundaries & Parcels from API
-    fetch("/api/institutions/polygons")
-      .then((res) => res.json())
-      .then((data) => {
-        if (!mapInstanceRef.current) return;
+    // Load Polygon Boundaries & Parcels from Cache or API
+    const setupPolygons = (data: any) => {
+      if (!mapInstanceRef.current) return;
 
-        // 1. Boundary Layer
-        if (data.boundaries && data.boundaries.features?.length > 0) {
-          const boundaryLayer = L.geoJSON(data.boundaries, {
-            style: (feature: any) => {
-              const type = feature?.properties?.institution_type || "pesantren";
-              const color = TYPE_COLORS[type]?.bg || "#059669";
-              return {
-                color,
-                weight: 2,
-                opacity: 0.85,
-                fillColor: color,
-                fillOpacity: 0.25,
-              };
-            },
-            onEachFeature: (feature: any, layer: any) => {
-              layer.on("click", () => {
-                if (feature.properties?.id) {
-                  onSelectItem(feature.properties.id);
-                }
-              });
-              layer.bindTooltip(
-                `<strong>${feature.properties?.name || "Batas Lahan"}</strong><br/><span class="text-[10px] text-zinc-500">Batas Bidang Tanah</span>`,
-                { direction: "top", sticky: true }
-              );
-            },
-          });
+      // 1. Boundary Layer
+      if (data.boundaries && data.boundaries.features?.length > 0) {
+        const boundaryLayer = L.geoJSON(data.boundaries, {
+          style: (feature: any) => {
+            const type = feature?.properties?.institution_type || "pesantren";
+            const color = TYPE_COLORS[type]?.bg || "#059669";
+            return {
+              color,
+              weight: 2,
+              opacity: 0.85,
+              fillColor: color,
+              fillOpacity: 0.25,
+            };
+          },
+          onEachFeature: (feature: any, layer: any) => {
+            layer.on("click", () => {
+              if (feature.properties?.id) {
+                onSelectItem(feature.properties.id);
+              }
+            });
+            layer.bindTooltip(
+              `<strong>${feature.properties?.name || "Batas Lahan"}</strong><br/><span class="text-[10px] text-zinc-500">Batas Bidang Tanah</span>`,
+              { direction: "top", sticky: true }
+            );
+          },
+        });
 
-          boundaryLayerRef.current = boundaryLayer;
-          if (visibleLayers.polygons) {
-            boundaryLayer.addTo(mapInstanceRef.current);
-          }
+        boundaryLayerRef.current = boundaryLayer;
+        if (visibleLayers.polygons) {
+          boundaryLayer.addTo(mapInstanceRef.current);
         }
+      }
 
-        // 2. Sub-Parcels Layer
-        if (data.parcels && data.parcels.features?.length > 0) {
-          const parcelLayer = L.geoJSON(data.parcels, {
-            style: (feature: any) => {
-              const color =
-                PARCEL_COLORS[feature?.properties?.category] || "#a8a29e";
-              return {
-                color,
-                weight: 1.5,
-                opacity: 0.9,
-                fillColor: color,
-                fillOpacity: 0.65,
-              };
-            },
-            onEachFeature: (feature: any, layer: any) => {
-              layer.on("click", () => {
-                if (feature.properties?.id) {
-                  onSelectItem(feature.properties.id);
-                }
-              });
-              const area = feature.properties?.area_m2
-                ? ` — ${Number(feature.properties.area_m2).toLocaleString()} m²`
-                : "";
-              layer.bindTooltip(
-                `<strong>${feature.properties?.parcel_name}</strong><br/>${feature.properties?.category}${area}`,
-                { direction: "top", sticky: true }
-              );
-            },
-          });
+      // 2. Sub-Parcels Layer
+      if (data.parcels && data.parcels.features?.length > 0) {
+        const parcelLayer = L.geoJSON(data.parcels, {
+          style: (feature: any) => {
+            const color =
+              PARCEL_COLORS[feature?.properties?.category] || "#a8a29e";
+            return {
+              color,
+              weight: 1.5,
+              opacity: 0.9,
+              fillColor: color,
+              fillOpacity: 0.65,
+            };
+          },
+          onEachFeature: (feature: any, layer: any) => {
+            layer.on("click", () => {
+              if (feature.properties?.id) {
+                onSelectItem(feature.properties.id);
+              }
+            });
+            const area = feature.properties?.area_m2
+              ? ` — ${Number(feature.properties.area_m2).toLocaleString()} m²`
+              : "";
+            layer.bindTooltip(
+              `<strong>${feature.properties?.parcel_name}</strong><br/>${feature.properties?.category}${area}`,
+              { direction: "top", sticky: true }
+            );
+          },
+        });
 
-          parcelLayerRef.current = parcelLayer;
-          if (visibleLayers.polygons) {
-            parcelLayer.addTo(mapInstanceRef.current);
-          }
+        parcelLayerRef.current = parcelLayer;
+        if (visibleLayers.polygons) {
+          parcelLayer.addTo(mapInstanceRef.current);
         }
-      })
-      .catch((err) => console.error("Error loading polygons:", err));
+      }
+    };
+
+    const cachedPolygons = getPolygonsCache();
+    if (cachedPolygons) {
+      setupPolygons(cachedPolygons);
+    } else {
+      fetch("/api/institutions/polygons")
+        .then((res) => res.json())
+        .then((data) => {
+          setPolygonsCache(data);
+          setupPolygons(data);
+        })
+        .catch((err) => console.error("Error loading polygons:", err));
+    }
 
     return () => {
       resizeObserver.disconnect();
@@ -418,15 +431,52 @@ export default function MapComponent({
       </div>
 
       {/* Floating Status Pill (Bottom Center) */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-400 bg-white/95 backdrop-blur-md border border-zinc-200 shadow-md rounded-full px-4 py-1.5 flex items-center gap-2.5 text-xs text-zinc-600">
-        <span className="flex h-2 w-2 relative">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-700"></span>
-        </span>
-        <span>
-          Menampilkan <strong className="text-zinc-900 font-semibold">{renderedCount.toLocaleString()}</strong> titik lembaga (Cluster aktif)
-        </span>
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-400 bg-white/95 backdrop-blur-md border border-zinc-200 shadow-md rounded-full px-4 py-1.5 flex items-center gap-2.5 text-xs text-zinc-600 transition-all">
+        {isLoading && renderedCount === 0 ? (
+          <>
+            <span className="flex h-2.5 w-2.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
+            </span>
+            <span className="text-zinc-700 font-medium flex items-center gap-1.5">
+              <span>Sedang memuat data spasial lembaga...</span>
+              <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" />
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-slate-700"></span>
+            </span>
+            <span>
+              Menampilkan <strong className="text-zinc-900 font-semibold">{renderedCount.toLocaleString()}</strong> titik lembaga (Cluster aktif)
+            </span>
+          </>
+        )}
       </div>
+
+      {/* Floating Center Notification Card when initially loading */}
+      {isLoading && renderedCount === 0 && (
+        <div className="absolute top-16 md:top-20 left-1/2 -translate-x-1/2 z-400 pointer-events-none transition-all duration-300">
+          <div className="bg-white/95 backdrop-blur-md border border-emerald-200/90 shadow-xl shadow-emerald-950/10 rounded-2xl px-4 py-2.5 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
+              <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" />
+            </div>
+            <div className="pr-1 text-left">
+              <div className="text-xs font-bold text-zinc-900 flex items-center gap-2">
+                <span>Memuat Titik Lembaga</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                  35.000+ Data
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500">
+                Sinkronisasi sebaran spasial seluruh Indonesia...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

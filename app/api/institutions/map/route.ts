@@ -119,7 +119,11 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: {
+        "Cache-Control": "public, max-age=120, s-maxage=600, stale-while-revalidate=86400",
+      },
+    });
   } catch (error: any) {
     console.error("Error fetching map markers:", error);
     return NextResponse.json(

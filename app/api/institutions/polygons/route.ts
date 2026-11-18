@@ -82,18 +82,25 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({
-      boundaries: {
-        type: "FeatureCollection",
-        features: boundaryFeatures,
+    return NextResponse.json(
+      {
+        boundaries: {
+          type: "FeatureCollection",
+          features: boundaryFeatures,
+        },
+        parcels: {
+          type: "FeatureCollection",
+          features: parcelFeatures,
+        },
+        count_boundaries: boundaryFeatures.length,
+        count_parcels: parcelFeatures.length,
       },
-      parcels: {
-        type: "FeatureCollection",
-        features: parcelFeatures,
-      },
-      count_boundaries: boundaryFeatures.length,
-      count_parcels: parcelFeatures.length,
-    });
+      {
+        headers: {
+          "Cache-Control": "public, max-age=120, s-maxage=600, stale-while-revalidate=86400",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error fetching polygons:", error);
     return NextResponse.json(
