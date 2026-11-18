@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "sis-lpi": {
+        "type": "local",
+        "command": [
+          "bun",
+          "run",
+          "d:/Abun/Projects/sis-lpi-mcp/src/index.ts"
+        ]
+      }
+    }
+  }
+}
