@@ -71,3 +71,17 @@ export function formatCurrency(val: number | string | null | undefined): string 
   if (isNaN(num)) return String(val);
   return `Rp ${new Intl.NumberFormat("id-ID").format(num)}`;
 }
+
+/**
+ * Mengembangkan alias/akronim seperti 'uin' menjadi 'universitas islam negeri'
+ */
+export function expandAliases(input: string): string {
+  let expanded = input.toLowerCase();
+  for (const [alias, fullForms] of Object.entries(SEARCH_ALIASES)) {
+    const regex = new RegExp(`\\b${alias}\\b`, "gi");
+    if (regex.test(expanded)) {
+      expanded = expanded.replace(regex, fullForms[0]);
+    }
+  }
+  return expanded;
+}

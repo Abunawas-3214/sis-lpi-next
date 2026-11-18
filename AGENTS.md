@@ -163,9 +163,43 @@ bun run build
 # Menjalankan skrip pengujian spasial & integritas database
 bun run scripts/test-final-verification.ts
 
+# Menjalankan pengujian endpoint Model Context Protocol (MCP)
+bun run scripts/test-mcp-route.ts
+
 # Membuka GUI Drizzle Studio untuk eksplorasi database
 bun x drizzle-kit studio
 ```
+
+---
+
+## 6. Integrasi Model Context Protocol (MCP) Server
+
+Aplikasi `sis-lpi-next` dilengkapi dengan endpoint server terstandarisasi **Model Context Protocol (MCP)** yang menyatu pada rute:
+👉 **`/api/mcp`** (dikelola oleh [`lib/mcp/server.ts`](file:///D:/Abun/Projects/sis-lpi-next/lib/mcp/server.ts) dan [`app/api/mcp/route.ts`](file:///D:/Abun/Projects/sis-lpi-next/app/api/mcp/route.ts)).
+
+### 6.1 Karakteristik & Batasan Keamanan
+1. **Khusus Data Publik (Read-Only)**:
+   - Endpoint `/api/mcp` hanya mengakses data yang berhak diakses publik (tanpa login).
+   - Seluruh kueri dieksekusi di dalam transaksi PostgreSQL dengan mode `BEGIN TRANSACTION READ ONLY`.
+   - **Dilarang keras**: Mengekspos tabel pengguna (`users`), data session login, kredensial password, atau fungsi mutasi data admin/institusi ke dalam tools MCP.
+2. **Stateless Web Standards Transport**:
+   - Menggunakan `WebStandardStreamableHTTPServerTransport` dari `@modelcontextprotocol/sdk`.
+   - Mendukung metode `GET` (koneksi Server-Sent Events / SSE) dan `POST` (eksekusi JSON-RPC).
+   - Bebas biaya token LLM di sisi server: client AI eksternal (OpenCode, Claude, Cursor) menggunakan API Key milik mereka sendiri.
+3. **Pengamanan Opsional (Token Auth)**:
+   - Jika variabel `MCP_API_KEY` ditentukan di `.env`, setiap request ke `/api/mcp` wajib menyertakan header `x-mcp-api-key: <key>` atau `Authorization: Bearer <key>`.
+
+### 6.2 Daftar 8 Tools Publik yang Disediakan
+1. **`search_institutions`**: Pencarian multi-kriteria lembaga (nama, alamat, tipe, provinsi, kota, status verifikasi) dengan pagination.
+2. **`get_institution_detail`**: Profil lengkap satu lembaga berdasarkan ID (atribut lahan, sertifikat, zonasi, legalitas).
+3. **`find_institution_by_name`**: Pencarian pintar berdasarkan nama atau singkatan (`UIN`, `IAIN`, `Ponpes`, `MAN`, dll.) yang langsung merangkum luas lahan (`landTotalAreaM2`).
+4. **`get_institution_stats`**: Agregasi statistik wilayah (menghitung jumlah pesantren/madrasah di kota/provinsi tertentu, status negeri vs swasta, total luas lahan).
+5. **`get_about_info`**: Informasi resmi platform publik `/about` (visi, pilar, prinsip syariah *amānah*, *khilāfah*, *mīzān*, serta metodologi presisi spasial).
+6. **`get_nearby_institutions`**: Analisis spasial jarak radius (GPS latitude & longitude) dengan perhitungan jarak akurat (km & meter).
+7. **`get_institution_land_polygons`**: Data spasial GeoJSON FeatureCollection standar RFC 7946 untuk poligon batas luar tanah dan titik fasilitas kampus/lembaga.
+8. **`get_provinces_summary`**: Rekapitulasi agregat sebaran lembaga di 38 provinsi di Indonesia.
+
+---
 
 <!-- BEGIN:nextjs-agent-feedback -->
 

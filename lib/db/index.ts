@@ -19,4 +19,5 @@ if (process.env.NODE_ENV !== "production") {
   globalForDb.pool = pool;
 }
 
+export { pool };
 export const db = drizzle(process.env.DATABASE_URL!);

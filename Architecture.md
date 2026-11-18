@@ -11,17 +11,20 @@ SIS-LPI Next menerapkan arsitektur monolitik modular modern (*modern modular mon
 
 ```mermaid
 flowchart TD
-    subgraph ClientLayer ["Client Layer (Browser)"]
+    subgraph ClientLayer ["Client Layer (Browser & AI Clients)"]
         PublicUser["Pengguna Publik / Santri\n(Peta Makro, Filter, Crowdsource)"]
         InstUser["Operator Lembaga\n(Portal /institusi, Polygon Editor)"]
         AdminUser["Admin Verifikator\n(Panel /admin, Validasi Status)"]
+        AiAgent["AI Agent Eksternal\n(OpenCode, Claude, Cursor, Antigravity)"]
     end
 
     subgraph AppLayer ["Next.js 16 (App Router)"]
         UI_Components["React 19 Server & Client Components\n(Leaflet Dynamic, Tailwind CSS v4)"]
         RouteHandlers["Route Handlers (REST Endpoints)\n(/api/institutions, /api/auth, /api/admin)"]
+        McpHandler["MCP Server Endpoint\n(/api/mcp - WebStandardStreamableHTTP)"]
         AuthMiddleware["Security & Auth Guard\n(HMAC-SHA256 Session Cookie)"]
         SpatialEngine["Spatial Geometry Engine\n(Point-in-Polygon, Geodesic Area Calc)"]
+        McpTools["MCP Public Tools Engine (8 Tools)\n(Read-Only Database Transactions)"]
     end
 
     subgraph DataLayer ["Data & Persistence Layer"]
@@ -32,11 +35,14 @@ flowchart TD
     PublicUser -->|HTTPS| UI_Components
     InstUser -->|HTTPS + Session| UI_Components
     AdminUser -->|HTTPS + Session| UI_Components
+    AiAgent -->|HTTP / SSE Protocol| McpHandler
 
     UI_Components --> RouteHandlers
+    McpHandler --> McpTools
     RouteHandlers --> AuthMiddleware
     RouteHandlers --> SpatialEngine
     RouteHandlers --> Drizzle
+    McpTools -->|Read-Only SQL Pool| NeonDB
     Drizzle -->|TCP Connection Pool| NeonDB
 ```
 
@@ -248,6 +254,7 @@ sequenceDiagram
 | `/api/admin/edits/[id]/approve` | `POST` | Role `admin`, `super_admin` | Menyetujui usulan koreksi dan mengaplikasikannya ke database. |
 | `/api/admin/edits/[id]/reject` | `POST` | Role `admin`, `super_admin` | Menolak usulan koreksi dengan catatan reviewer. |
 | `/api/admin/users` | `GET`, `POST` | Role `super_admin` | Manajemen akun pengguna (35.904 akun). |
+| `/api/mcp` | `GET`, `POST`, `OPTIONS` | Publik (Opsional `MCP_API_KEY`) | Endpoint standar Model Context Protocol (MCP) untuk AI Agent (OpenCode, Claude, Cursor) membaca data publik secara aman. |
 
 ---
 
@@ -257,3 +264,49 @@ sequenceDiagram
 - **Partial Prerendering (PPR)**: Halaman detail `/institutions/[id]` merender layout statis secara instan dan mengalirkan data dinamis (*streaming*) di background.
 - **Neon Cloud Postgres Connection Pooler**: Menggunakan endpoint pooler (`-pooler`) untuk mencegah batas koneksi habis saat lalu lintas tinggi.
 - **Keamanan Dependensi**: Next.js telah ditingkatkan ke **16.4.3** dengan konfigurasi `experimental.agentUpgrade = "security"` untuk menjamin keamanan dari kerentanan advisory terbaru.
+
+---
+
+## 8. Arsitektur Model Context Protocol (MCP) Server
+
+SIS-LPI Next menyediakan endpoint **Model Context Protocol (MCP)** bawaan yang menyatu pada rute `/api/mcp`. Endpoint ini memungkinkan asisten AI eksternal mengeksekusi kueri terstruktur dan analisis spasial tanpa perlu mengakses basis data secara langsung atau menjalankan daemon server terpisah.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as AI Client (OpenCode / Claude)
+    participant Route as Next.js (/api/mcp)
+    participant Engine as MCP Engine (lib/mcp)
+    participant DB as PostgreSQL (Neon DB)
+
+    Note over Client: Client membawa API Key LLM sendiri (Gemini / Claude / OpenAI)
+    Client->>Route: GET /api/mcp (Accept: text/event-stream)
+    Route-->>Client: HTTP 200 (SSE Priming Event Stream)
+
+    Client->>Route: POST /api/mcp (JSON-RPC: initialize)
+    Route->>Engine: Inisialisasi McpServer (Capabilities & Tools)
+    Engine-->>Client: Capabilities: tools (listChanged: true)
+
+    Client->>Route: POST /api/mcp (JSON-RPC: tools/list)
+    Route->>Engine: Ambil skema 8 Tools Publik
+    Engine-->>Client: Daftar 8 tools + Skema Zod Input
+
+    Client->>Route: POST /api/mcp (JSON-RPC: tools/call, e.g. find_institution_by_name)
+    Route->>Engine: Eksekusi Tool Handler
+    Engine->>DB: BEGIN TRANSACTION READ ONLY; Query SQL; COMMIT;
+    DB-->>Engine: Hasil Data Terstruktur
+    Engine-->>Client: JSON-RPC Result Data
+```
+
+### Prinsip Desain Kunci MCP:
+1. **Zero Extra RAM & Shared Pool**: Menumpang pada runtime Next.js yang sudah aktif dan menggunakan koneksi pooler database yang sama.
+2. **Tanpa Biaya Token Server**: Server hanya merespons JSON-RPC data; biaya token model AI sepenuhnya ditanggung akun pengguna di client.
+3. **8 Tools Publik Terstandarisasi**:
+   - `search_institutions`: Pencarian multi-kriteria dengan pagination.
+   - `get_institution_detail`: Detail lengkap satu lembaga berdasarkan ID.
+   - `find_institution_by_name`: Pencarian cerdas nama + alias akronim spasial (`UIN`, `Ponpes`, dll.) + luas lahan.
+   - `get_institution_stats`: Agregasi statistik wilayah per kota/provinsi.
+   - `get_about_info`: Informasi metodologi, visi syariah (*amānah*, *khilāfah*, *mīzān*), dan fitur.
+   - `get_nearby_institutions`: Analisis spasial jarak radius terdekat (km/meter) via rumus Haversine.
+   - `get_institution_land_polygons`: GeoJSON FeatureCollection RFC 7946 poligon batas lahan & titik fasilitas.
+   - `get_provinces_summary`: Agregasi sebaran lembaga di 38 provinsi di Indonesia.

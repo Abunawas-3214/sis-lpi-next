@@ -110,6 +110,12 @@ Platform ini dibangun di atas fondasi teknologi mutakhir: **Next.js 16 (App Rout
 - Pengusulan pendaftaran institusi baru yang belum terdata di SIS-LPI.
 - Pengelompokan pengajuan menggunakan UUID `batch_id`.
 
+### 4.5 Layanan Antarmuka AI Terstandarisasi (Model Context Protocol / MCP Endpoint)
+- Menyediakan endpoint publik `/api/mcp` berbasis spesifikasi resmi Model Context Protocol (MCP) dengan protokol WebStandardStreamableHTTP.
+- Memungkinkan integrasi langsung dengan AI Agent & Coding Assistants (OpenCode, Claude Desktop, Cursor, Antigravity) untuk mengeksplorasi data spasial dan kelembagaan secara terstruktur tanpa antarmuka browser.
+- Menjamin isolasi data dan keamanan: hanya membaca data publik (Read-Only) tanpa mengekspos kredensial pengguna atau mutasi basis data.
+- Menyediakan 8 tools domain publik: pencarian nama pintar (ekspansi alias `UIN`, `Ponpes`, dll.), kueri spasial radius terdekat (Haversine km/m), GeoJSON batas poligon lahan & fasilitas, agregasi 38 provinsi nasional, dan statistik wilayah.
+
 ---
 
 ## 5. Persyaratan Non-Fungsional (Non-Functional Requirements)

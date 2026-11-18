@@ -41,6 +41,11 @@ Sistem memiliki 3 tingkat hak akses dengan alur verifikasi data:
    - Dapat memperbarui profil institusi, menggambar multiple polygon lahan, dan mengelola titik fasilitas (child points).
    - Setiap perubahan yang disimpan otomatis berstatus **Pengajuan** untuk diverifikasi oleh Admin.
 
+### 5. Model Context Protocol (MCP) Server Bawaan (`/api/mcp`)
+- Menyediakan antarmuka standar **Model Context Protocol** resmi yang menyatu langsung pada runtime Next.js.
+- Memungkinkan AI Agent (seperti **OpenCode**, **Claude Desktop**, **Cursor**, **Antigravity**) terhubung secara remote melalui HTTP / Server-Sent Events (SSE).
+- Menyediakan 8 tools cerdas khusus data publik (Read-Only) yang menjamin keamanan data internal dan tanpa biaya komputasi model AI di sisi server.
+
 ---
 
 ## 🔑 Kredensial Default Akun
@@ -130,6 +135,51 @@ npm start
 - `POST /api/institutions/[id]/child-points` — Menambah titik fasilitas (wajib validasi dalam polygon).
 - `DELETE /api/institutions/[id]/child-points/[pointId]` — Menghapus titik fasilitas.
 - `PATCH /api/institutions/[id]/child-points/[pointId]` — Memperbarui data titik fasilitas.
+
+### Model Context Protocol (MCP) untuk AI Agents
+- `GET /api/mcp` — Inisialisasi koneksi Server-Sent Events (SSE) untuk client MCP.
+- `POST /api/mcp` — Menerima dan mengeksekusi pesan JSON-RPC (initialize, tools/list, tools/call).
+
+---
+
+## 🤖 Menghubungkan AI Client ke Server MCP SIS-LPI
+
+Anda dapat menghubungkan asisten AI eksternal langsung ke server SIS-LPI melalui internet tanpa menjalankan skrip CLI terpisah:
+
+### Konfigurasi OpenCode (`opencode.json`):
+```json
+{
+  "mcp": {
+    "servers": {
+      "sis-lpi-remote": {
+        "type": "remote",
+        "url": "https://domain-anda.com/api/mcp"
+      }
+    }
+  }
+}
+```
+
+### Konfigurasi Claude Desktop (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "sis-lpi-remote": {
+      "url": "https://domain-anda.com/api/mcp"
+    }
+  }
+}
+```
+
+### 8 Tools Publik yang Tersedia:
+1. `find_institution_by_name`: Pencarian nama lembaga & luas lahan dengan dukungan alias spasial (`UIN`, `Ponpes`, `MAN`, dll.).
+2. `get_institution_stats`: Perhitungan statistik lembaga per wilayah kota/provinsi.
+3. `get_nearby_institutions`: Pencarian radius spasial terdekat berdasarkan koordinat GPS.
+4. `get_institution_land_polygons`: Data GeoJSON batas poligon lahan & titik fasilitas kampus.
+5. `get_about_info`: Informasi visi, prinsip syariah (*amānah*, *khilāfah*, *mīzān*), dan metodologi GIS.
+6. `get_provinces_summary`: Agregasi sebaran lembaga pada 38 provinsi di Indonesia.
+7. `search_institutions`: Pencarian umum daftar lembaga dengan filter & pagination.
+8. `get_institution_detail`: Detail profil lengkap satu lembaga berdasarkan ID.
 
 ### Manajemen Institusi & Verifikasi
 - `GET /api/admin/institutions` — Daftar institusi paginasi dengan filter status verifikasi (`valid`, `pengajuan`, `tidak_valid`).
